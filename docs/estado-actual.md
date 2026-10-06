@@ -22,6 +22,7 @@ Actualizado: 2026-10-06
 - Recepción con actualización de sede_actual.
 - Activación del préstamo interbibliotecario luego de recibir.
 - Retorno del ejemplar interbibliotecario mediante un segundo remito.
+- Estado PENDIENTE_RETORNO entre la devolución interbibliotecaria y el despacho de regreso, evitando que el ejemplar figure como disponible en la sede destino.
 - Observer para cambios del Remito.
 - DatabaseSingleton para SQLite.
 - Cuatro reportes no triviales obligatorios más un reporte de préstamos vencidos.
@@ -41,6 +42,7 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 - El flujo de ida y retorno fue ejecutado localmente después de aplicar Observer al historial y pasó.
 - La consulta SQL del reporte de vencidos fue ejecutada localmente y pasó.
 - La activación/desactivación de ejemplares y el bloqueo durante un préstamo fueron verificados con una prueba dirigida local.
+- El flujo interbibliotecario con PENDIENTE_RETORNO, exclusión del reporte de disponibilidad y regreso a la sede de pertenencia fue ejecutado de punta a punta en una prueba dirigida local.
 - Falta una ejecución visual completa de la interfaz y una regresión completa de toda la suite después de los últimos cambios.
 
 ## Pendiente inmediato

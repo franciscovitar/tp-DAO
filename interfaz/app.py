@@ -97,9 +97,11 @@ class BibliotecaApp(tk.Tk):
             self.sede_vars[clave] = var
             ttk.Entry(form, textvariable=var, width=21).grid(row=1, column=i, padx=4, pady=4)
 
-        ttk.Button(form, text="Guardar", command=self.guardar_sede).grid(row=1, column=5, padx=5)
-        ttk.Button(form, text="Nuevo", command=self.limpiar_form_sede).grid(row=1, column=6, padx=5)
-        ttk.Button(form, text="Cambiar activo/baja", command=self.toggle_sede).grid(row=1, column=7, padx=5)
+        acciones = ttk.Frame(form)
+        acciones.grid(row=2, column=0, columnspan=5, sticky="w", padx=4, pady=(2, 6))
+        ttk.Button(acciones, text="Guardar", command=self.guardar_sede).pack(side="left", padx=(0, 5))
+        ttk.Button(acciones, text="Nuevo", command=self.limpiar_form_sede).pack(side="left", padx=5)
+        ttk.Button(acciones, text="Cambiar activo/baja", command=self.toggle_sede).pack(side="left", padx=5)
 
         self.tree_sedes = self.crear_tree(
             self.tab_sedes,
@@ -174,9 +176,11 @@ class BibliotecaApp(tk.Tk):
             self.socio_vars[clave] = var
             ttk.Entry(form, textvariable=var, width=21).grid(row=1, column=i, padx=4, pady=4)
 
-        ttk.Button(form, text="Guardar", command=self.guardar_socio).grid(row=1, column=5, padx=5)
-        ttk.Button(form, text="Nuevo", command=self.limpiar_form_socio).grid(row=1, column=6, padx=5)
-        ttk.Button(form, text="Habilitar/Inhabilitar", command=self.toggle_socio).grid(row=1, column=7, padx=5)
+        acciones = ttk.Frame(form)
+        acciones.grid(row=2, column=0, columnspan=5, sticky="w", padx=4, pady=(2, 6))
+        ttk.Button(acciones, text="Guardar", command=self.guardar_socio).pack(side="left", padx=(0, 5))
+        ttk.Button(acciones, text="Nuevo", command=self.limpiar_form_socio).pack(side="left", padx=5)
+        ttk.Button(acciones, text="Habilitar/Inhabilitar", command=self.toggle_socio).pack(side="left", padx=5)
 
         self.tree_socios = self.crear_tree(
             self.tab_socios,

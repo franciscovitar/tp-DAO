@@ -307,6 +307,34 @@ def buscar_prestamo(id_prestamo, nombre_archivo=ARCHIVO_BD):
     return prestamo
 
 
+def listar_prestamos_pendientes_retorno(nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT p.id, s.nombre || ' ' || s.apellido, l.titulo,
+               so.nombre, sd.nombre
+        FROM prestamos p
+        JOIN socios s ON s.id = p.socio_id
+        JOIN ejemplares e ON e.id = p.ejemplar_id
+        JOIN libros l ON l.id = e.libro_id
+        JOIN sedes so ON so.id = p.sede_origen_id
+        JOIN sedes sd ON sd.id = p.sede_destino_id
+        WHERE p.estado = 'DEVUELTO'
+          AND p.sede_origen_id <> p.sede_destino_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM remitos r
+              WHERE r.prestamo_id = p.id
+                AND r.sede_origen_id = p.sede_destino_id
+                AND r.sede_destino_id = p.sede_origen_id
+          )
+        ORDER BY p.id DESC
+    """)
+    prestamos = cursor.fetchall()
+    conexion.close()
+    return prestamos
+
+
 def listar_prestamos(nombre_archivo=ARCHIVO_BD):
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()

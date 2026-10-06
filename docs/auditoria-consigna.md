@@ -22,6 +22,7 @@ Actualizada: 2026-10-06
 - Evitar duplicados de socios, catálogo y ejemplares: cubierta.
 - No prestar ejemplares que no pertenezcan a la sede origen: cubierta.
 - No iniciar operaciones hacia o desde sedes de baja: cubierta.
+- Las reglas básicas de entrada importantes también se validan en la lógica: duración del préstamo mayor a cero, estado físico de devolución permitido y número de remito obligatorio.
 
 ## Patrones
 

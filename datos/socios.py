@@ -45,13 +45,18 @@ def listar_socios(nombre_archivo=ARCHIVO_BD):
 
 
 def modificar_socio(socio, nombre_archivo=ARCHIVO_BD):
+    existente = buscar_socio_por_dni(socio.dni, nombre_archivo)
+    if existente is not None and existente[0] != socio.id:
+        return False
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""
         UPDATE socios
-        SET nombre = ?, apellido = ?, telefono = ?, email = ?
+        SET dni = ?, nombre = ?, apellido = ?, telefono = ?, email = ?
         WHERE id = ?
-    """, (socio.nombre, socio.apellido, socio.telefono, socio.email, socio.id))
+    """, (socio.dni, socio.nombre, socio.apellido, socio.telefono,
+          socio.email, socio.id))
     conexion.commit()
     modificadas = cursor.rowcount
     conexion.close()

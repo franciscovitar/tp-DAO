@@ -44,13 +44,18 @@ def listar_libros(nombre_archivo=ARCHIVO_BD):
 
 
 def modificar_libro(libro, nombre_archivo=ARCHIVO_BD):
+    existente = buscar_libro_por_isbn(libro.isbn, nombre_archivo)
+    if existente is not None and existente[0] != libro.id:
+        return False
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""
         UPDATE libros
-        SET titulo = ?, autor = ?, editorial = ?, anio = ?
+        SET isbn = ?, titulo = ?, autor = ?, editorial = ?, anio = ?
         WHERE id = ?
-    """, (libro.titulo, libro.autor, libro.editorial, libro.anio, libro.id))
+    """, (libro.isbn, libro.titulo, libro.autor, libro.editorial,
+          libro.anio, libro.id))
     conexion.commit()
     modificadas = cursor.rowcount
     conexion.close()

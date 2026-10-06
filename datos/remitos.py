@@ -194,3 +194,19 @@ def listar_historial_remito(id_remito, nombre_archivo=ARCHIVO_BD):
     historial = cursor.fetchall()
     conexion.close()
     return historial
+
+
+def listar_remitos(nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT r.id, r.numero, r.prestamo_id, so.nombre, sd.nombre,
+               r.fecha_creacion, r.fecha_despacho, r.fecha_recepcion, r.estado
+        FROM remitos r
+        JOIN sedes so ON so.id = r.sede_origen_id
+        JOIN sedes sd ON sd.id = r.sede_destino_id
+        ORDER BY r.id DESC
+    """)
+    remitos = cursor.fetchall()
+    conexion.close()
+    return remitos

@@ -1,0 +1,87 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class Sede {
+  id
+  nombre
+  direccion
+  telefono
+  email
+  horario
+  activa
+}
+
+class Socio {
+  id
+  dni
+  nombre
+  apellido
+  telefono
+  email
+  habilitado
+}
+
+class Libro {
+  id
+  isbn
+  titulo
+  autor
+  editorial
+  anio
+}
+
+class Ejemplar {
+  id
+  codigo
+  estado
+  estado_fisico
+}
+
+class Prestamo {
+  id
+  fecha_solicitud
+  fecha_inicio
+  fecha_vencimiento
+  fecha_devolucion
+  estado
+}
+
+class Reserva {
+  id
+  fecha
+  estado
+}
+
+class Remito {
+  id
+  numero
+  fecha_creacion
+  fecha_despacho
+  fecha_recepcion
+  estado
+}
+
+class HistorialRemito {
+  id
+  estado
+  fecha_hora
+}
+
+Sede "1" -- "0..*" Ejemplar : pertenece >
+Libro "1" -- "1..*" Ejemplar
+Socio "1" -- "0..*" Prestamo
+Ejemplar "1" -- "0..*" Prestamo
+Socio "1" -- "0..*" Reserva
+Ejemplar "1" -- "0..*" Reserva
+Sede "1" -- "0..*" Prestamo : origen
+Sede "1" -- "0..*" Prestamo : destino
+Sede "1" -- "0..*" Remito : origen
+Sede "1" -- "0..*" Remito : destino
+Remito "1" o-- "1..*" Ejemplar
+Remito "1" *-- "1..*" HistorialRemito
+
+note right of Ejemplar
+  sede_pertenencia
+  sede_actual
+end note
+@enduml

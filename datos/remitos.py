@@ -6,6 +6,9 @@ from patrones.observer import HistorialRemitoObserver
 
 
 def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
+    if numero.strip() == "":
+        return False, "Número de remito obligatorio"
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 
@@ -95,6 +98,9 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
 
 
 def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
+    if numero.strip() == "":
+        return False, "Número de remito obligatorio"
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 

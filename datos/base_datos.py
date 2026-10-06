@@ -96,5 +96,42 @@ def crear_tablas(nombre_archivo=ARCHIVO_BD):
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS remitos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            numero TEXT NOT NULL UNIQUE,
+            prestamo_id INTEGER NOT NULL,
+            sede_origen_id INTEGER NOT NULL,
+            sede_destino_id INTEGER NOT NULL,
+            fecha_creacion TEXT NOT NULL,
+            fecha_despacho TEXT,
+            fecha_recepcion TEXT,
+            estado TEXT NOT NULL,
+            FOREIGN KEY (prestamo_id) REFERENCES prestamos(id),
+            FOREIGN KEY (sede_origen_id) REFERENCES sedes(id),
+            FOREIGN KEY (sede_destino_id) REFERENCES sedes(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS remito_ejemplares (
+            remito_id INTEGER NOT NULL,
+            ejemplar_id INTEGER NOT NULL,
+            PRIMARY KEY (remito_id, ejemplar_id),
+            FOREIGN KEY (remito_id) REFERENCES remitos(id),
+            FOREIGN KEY (ejemplar_id) REFERENCES ejemplares(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS historial_remito (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remito_id INTEGER NOT NULL,
+            estado TEXT NOT NULL,
+            fecha_hora TEXT NOT NULL,
+            FOREIGN KEY (remito_id) REFERENCES remitos(id)
+        )
+    """)
+
     conexion.commit()
     conexion.close()

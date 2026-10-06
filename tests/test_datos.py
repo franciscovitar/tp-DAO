@@ -81,3 +81,88 @@ def test_alta_de_ejemplar_y_control_de_codigo_duplicado():
     listado = listar_ejemplares(ARCHIVO_TEST)
     assert len(listado) == 1
     assert listado[0][2] == "Uno"
+
+
+def crear_datos_para_prestamo():
+    sede = Sede("Centro", "Colon 100", "111", "centro@mail.com", "8 a 20")
+    agregar_sede(sede, ARCHIVO_TEST)
+
+    socio = Socio("40111222", "Ana", "Perez", "111", "ana@mail.com")
+    agregar_socio(socio, ARCHIVO_TEST)
+
+    libro = Libro("9789500000001", "Uno", "Autor A", "Editorial", 2020)
+    agregar_libro(libro, ARCHIVO_TEST)
+
+    ejemplar = Ejemplar("EJ-001", libro, sede)
+    agregar_ejemplar(ejemplar, ARCHIVO_TEST)
+    return sede, socio, ejemplar
+
+
+def test_registrar_prestamo_local_cambia_estado_del_ejemplar():
+    from datos.prestamos import registrar_prestamo_local, buscar_prestamo
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_prestamo = registrar_prestamo_local(socio.id, ejemplar.id, sede.id,
+                                                nombre_archivo=ARCHIVO_TEST)
+
+    assert ok
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "ACTIVO"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
+
+
+def test_no_presta_a_socio_inhabilitado():
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    cambiar_habilitacion_socio(socio.id, False, ARCHIVO_TEST)
+
+    ok, mensaje = registrar_prestamo_local(socio.id, ejemplar.id, sede.id,
+                                            nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "El socio está inhabilitado"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
+
+
+def test_no_presta_desde_una_sede_dada_de_baja():
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    cambiar_estado_sede(sede.id, False, ARCHIVO_TEST)
+
+    ok, mensaje = registrar_prestamo_local(socio.id, ejemplar.id, sede.id,
+                                            nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La sede está dada de baja"
+
+
+def test_no_presta_un_ejemplar_de_otra_sede():
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    otra = Sede("Norte", "Rivadavia 200", "222", "norte@mail.com", "8 a 20")
+    agregar_sede(otra, ARCHIVO_TEST)
+
+    ok, mensaje = registrar_prestamo_local(socio.id, ejemplar.id, otra.id,
+                                            nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "El ejemplar no pertenece a la sede de origen"
+
+
+def test_devolucion_cierra_prestamo_y_libera_ejemplar():
+    from datos.prestamos import registrar_prestamo_local, registrar_devolucion, buscar_prestamo
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_prestamo = registrar_prestamo_local(socio.id, ejemplar.id, sede.id,
+                                                nombre_archivo=ARCHIVO_TEST)
+    assert ok
+
+    ok, _ = registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)
+
+    assert ok
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "DEVUELTO"
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[5] == "DISPONIBLE"
+    assert guardado[6] == "DANADO"

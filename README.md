@@ -6,16 +6,19 @@ Repositorio del trabajo práctico integrador de Desarrollo de Aplicaciones con O
 
 ## Estado actual
 
-Está terminada la primera base del proyecto:
+Ya están implementadas las dos primeras etapas de la base:
 
-- clases Sede, Socio, Libro y Ejemplar;
-- base SQLite con las cuatro tablas iniciales;
+- clases Sede, Socio, Libro, Ejemplar y Prestamo;
+- base SQLite con sedes, socios, libros, ejemplares y préstamos;
 - altas, búsquedas y modificaciones básicas;
 - control de DNI, ISBN y código de ejemplar duplicados;
 - baja lógica de sedes y habilitación de socios;
+- préstamo local con validación de socio, sede y ejemplar;
+- devolución con actualización del estado físico;
+- transacciones para registrar préstamo y devolución;
 - pruebas iniciales con pytest.
 
-Todavía no están implementados préstamos, reservas, remitos, interfaz ni reportes.
+Todavía no están implementadas reservas, remitos, interfaz ni reportes.
 
 ## Estructura
 

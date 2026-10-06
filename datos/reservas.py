@@ -115,3 +115,21 @@ def buscar_reserva(id_reserva, nombre_archivo=ARCHIVO_BD):
     reserva = cursor.fetchone()
     conexion.close()
     return reserva
+
+
+def listar_reservas(nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT r.id, s.dni, s.nombre || ' ' || s.apellido,
+               l.titulo, e.codigo, se.nombre, r.fecha, r.estado
+        FROM reservas r
+        JOIN socios s ON s.id = r.socio_id
+        JOIN ejemplares e ON e.id = r.ejemplar_id
+        JOIN libros l ON l.id = e.libro_id
+        JOIN sedes se ON se.id = r.sede_id
+        ORDER BY r.id DESC
+    """)
+    reservas = cursor.fetchall()
+    conexion.close()
+    return reservas

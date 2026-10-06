@@ -11,9 +11,9 @@ Implementado:
 - Observer para monitoreo del Remito;
 - Singleton para acceso a SQLite;
 - cuatro reportes no triviales;
-- pruebas con pytest.
+- primera interfaz gráfica con Tkinter/ttk.
 
-Los dos patrones obligatorios y los cuatro reportes obligatorios ya están cubiertos.
+La interfaz permite trabajar con sedes, socios, catálogo, ejemplares, préstamos, reservas, remitos y reportes.
 
 Ver `docs/estado-actual.md` para retomar el trabajo sin depender del historial del chat.
 
@@ -23,6 +23,7 @@ Ver `docs/estado-actual.md` para retomar el trabajo sin depender del historial d
 modelos/
 datos/
 patrones/
+interfaz/
 tests/
 docs/
 main.py
@@ -32,5 +33,10 @@ main.py
 
 ```
 python main.py
+```
+
+Pruebas:
+
+```
 python -m pytest -q
 ```

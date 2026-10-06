@@ -29,18 +29,33 @@ Implementados:
 4. movimientos origen/destino y tiempo promedio de tránsito.
 
 ## Etapa 7 - Interfaz
-Estado: pendiente.
+Estado: primera versión implementada.
 
-Agregarla con formularios claros y validaciones, sin mover reglas de negocio a la pantalla.
+Tkinter/ttk con pestañas para sedes, socios, catálogo, préstamos, reservas, remitos y reportes.
+
+Pendiente:
+- prueba visual completa;
+- ajustes de comodidad/errores detectados durante uso real;
+- decidir si hace falta algún formulario adicional después de la auditoría de consigna.
 
 ## Etapa 8 - Pruebas finales
 Estado: en curso.
 
+Reejecutar regresión completa y cubrir reglas normales, límites y errores relevantes.
+
 ## Etapa 9 - Auditoría de consigna
 Estado: pendiente.
 
+Revisar cada requisito como:
+- implementado;
+- probado;
+- visible desde la interfaz;
+- explicable en la defensa.
+
 ## Etapa 10 - Defensa
 Estado: pendiente.
+
+Poder explicar clases, relaciones, Libro vs Ejemplar, sede de pertenencia vs actual, estados del remito, Observer, Singleton, transacciones, interfaz y reportes.
 
 ## Regla de desarrollo
 

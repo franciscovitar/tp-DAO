@@ -291,3 +291,24 @@ def buscar_prestamo(id_prestamo, nombre_archivo=ARCHIVO_BD):
     prestamo = cursor.fetchone()
     conexion.close()
     return prestamo
+
+
+def listar_prestamos(nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT p.id, s.dni, s.nombre || ' ' || s.apellido,
+               l.titulo, e.codigo, so.nombre, sd.nombre,
+               p.fecha_solicitud, p.fecha_inicio, p.fecha_vencimiento,
+               p.estado
+        FROM prestamos p
+        JOIN socios s ON s.id = p.socio_id
+        JOIN ejemplares e ON e.id = p.ejemplar_id
+        JOIN libros l ON l.id = e.libro_id
+        JOIN sedes so ON so.id = p.sede_origen_id
+        JOIN sedes sd ON sd.id = p.sede_destino_id
+        ORDER BY p.id DESC
+    """)
+    prestamos = cursor.fetchall()
+    conexion.close()
+    return prestamos

@@ -11,6 +11,7 @@ Actualizado: 2026-10-06
 - Patrones enseñados en el material 2026 recibido: Singleton, Factory y Observer.
 - Patrones elegidos e implementados: Observer + Singleton.
 - State descartado; Factory queda como alternativa.
+- La cátedra exige interfaz gráfica, formularios y validaciones, pero en las fuentes disponibles no aparece prescripta una librería concreta. Se eligió Tkinter/ttk por ser parte de la biblioteca estándar de Python y no agregar dependencias externas.
 
 ## Implementado
 
@@ -24,17 +25,35 @@ Actualizado: 2026-10-06
 - Observer para monitoreo de cambios del Remito.
 - DatabaseSingleton para centralizar el acceso a SQLite.
 - Cuatro reportes no triviales.
+- Primera interfaz gráfica funcional con pestañas para:
+  - sedes;
+  - socios;
+  - catálogo y ejemplares;
+  - préstamos y devoluciones;
+  - reservas;
+  - remitos;
+  - reportes.
+
+## Interfaz
+
+La pantalla permite altas y modificaciones básicas de sedes, socios y libros; alta de ejemplares; préstamo local e interbibliotecario; devolución; reserva/cancelación; preparación y avance del remito; consulta del historial; y visualización de los cuatro reportes.
+
+Las reglas importantes siguen en la lógica/datos. La interfaz valida campos requeridos y formatos simples, pero no reemplaza las validaciones de negocio.
 
 ## Verificación
 
-Checkpoint actual probado localmente: 26 tests pasaron.
+- El checkpoint anterior del núcleo tenía 26 tests registrados como aprobados.
+- El nuevo bloque de interfaz fue validado por sintaxis con py_compile.
+- Se verificó que tkinter puede importarse en el entorno disponible.
+- Falta una ejecución visual completa de la interfaz en un entorno con escritorio y una regresión completa del proyecto después de este bloque.
 
 ## Pendiente inmediato
 
-1. Resolver o validar el retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
-2. Implementar interfaz.
-3. Hacer auditoría requisito por requisito.
-4. Preparar defensa.
+1. Ejecutar la interfaz visualmente y corregir detalles de uso si aparecen.
+2. Resolver o validar el retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
+3. Auditar la consigna requisito por requisito.
+4. Completar pruebas de regresión y casos límite.
+5. Preparar defensa.
 
 ## Punto abierto
 

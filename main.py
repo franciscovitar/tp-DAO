@@ -1,9 +1,11 @@
 from datos.base_datos import crear_tablas
+from interfaz.app import BibliotecaApp
 
 
 def main():
     crear_tablas()
-    print("Base de datos inicializada.")
+    app = BibliotecaApp()
+    app.mainloop()
 
 
 if __name__ == "__main__":

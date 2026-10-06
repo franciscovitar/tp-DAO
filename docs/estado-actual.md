@@ -31,7 +31,7 @@ Actualizado: 2026-10-06
 
 ## Regla de retorno adoptada
 
-Después de la devolución de un préstamo interbibliotecario se genera un remito desde la sede de devolución hacia la sede de pertenencia. Al crear ese remito el ejemplar deja de estar disponible; al recibirlo vuelve a sede_pertenencia y queda DISPONIBLE.
+Después de la devolución de un préstamo interbibliotecario el ejemplar queda PENDIENTE_RETORNO y deja de figurar como disponible. Luego se genera un remito desde la sede de devolución hacia la sede de pertenencia; al recibirlo vuelve a sede_pertenencia y queda DISPONIBLE.
 
 Esta regla completa un punto que la consigna deja abierto y se documenta como decisión de diseño del grupo.
 
@@ -43,7 +43,9 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 - La consulta SQL del reporte de vencidos fue ejecutada localmente y pasó.
 - La activación/desactivación de ejemplares y el bloqueo durante un préstamo fueron verificados con una prueba dirigida local.
 - El flujo interbibliotecario con PENDIENTE_RETORNO, exclusión del reporte de disponibilidad y regreso a la sede de pertenencia fue ejecutado de punta a punta en una prueba dirigida local.
-- Falta una ejecución visual completa de la interfaz y una regresión completa de toda la suite después de los últimos cambios.
+- La suite actual contiene 35 tests.
+- Las nuevas guardas de duración, estado físico y número de remito fueron revisadas con pruebas específicas; falta ejecutar la regresión completa de los 35 tests sobre el main actual.
+- Falta una ejecución visual completa de la interfaz.
 
 ## Pendiente inmediato
 

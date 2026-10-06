@@ -1,0 +1,156 @@
+name: DAO final verification
+
+on:
+  push:
+    branches:
+      - tema1-final-verification
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install test and GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pytest python3-tk xvfb
+
+      - name: Run full regression
+        run: /usr/bin/python3 -m pytest -q
+
+      - name: Run GUI end-to-end smoke
+        run: |
+          xvfb-run -a /usr/bin/python3 - <<'PY'
+          import os
+          import tempfile
+          from tkinter import messagebox
+
+          messagebox.showinfo = lambda *args, **kwargs: None
+          messagebox.showwarning = lambda *args, **kwargs: None
+          messagebox.showerror = lambda *args, **kwargs: None
+
+          from interfaz.app import BibliotecaApp
+          from datos.base_datos import crear_tablas
+          from datos.sedes import listar_sedes
+          from datos.ejemplares import buscar_ejemplar_por_codigo
+          from datos.remitos import listar_historial_remito
+
+          def select_first(tree):
+              items = tree.get_children()
+              assert items, "No hay filas para seleccionar"
+              tree.selection_set(items[0])
+              tree.focus(items[0])
+
+          with tempfile.TemporaryDirectory() as tmp:
+              os.chdir(tmp)
+              crear_tablas()
+              app = BibliotecaApp()
+              app.update_idletasks()
+
+              tabs = [app.notebook.tab(i, "text") for i in range(app.notebook.index("end"))]
+              assert tabs == ["Sedes", "Socios", "Catálogo", "Préstamos", "Reservas", "Remitos", "Reportes"]
+
+              for nombre, direccion, telefono, email in [
+                  ("Centro", "Colon 100", "111", "centro@mail.com"),
+                  ("Norte", "Rivadavia 200", "222", "norte@mail.com"),
+              ]:
+                  app.sede_vars["nombre"].set(nombre)
+                  app.sede_vars["direccion"].set(direccion)
+                  app.sede_vars["telefono"].set(telefono)
+                  app.sede_vars["email"].set(email)
+                  app.sede_vars["horario"].set("8 a 20")
+                  app.guardar_sede()
+
+              app.socio_vars["dni"].set("40111222")
+              app.socio_vars["nombre"].set("Ana")
+              app.socio_vars["apellido"].set("Perez")
+              app.socio_vars["telefono"].set("351111111")
+              app.socio_vars["email"].set("ana@mail.com")
+              app.guardar_socio()
+
+              app.libro_vars["isbn"].set("9789500000001")
+              app.libro_vars["titulo"].set("Uno")
+              app.libro_vars["autor"].set("Autor")
+              app.libro_vars["editorial"].set("Editorial")
+              app.libro_vars["anio"].set("2020")
+              app.guardar_libro()
+
+              for codigo in ("EJ-001", "EJ-002"):
+                  app.var_codigo_ejemplar.set(codigo)
+                  app.combo_libro_ejemplar.current(0)
+                  app.combo_sede_ejemplar.current(0)
+                  app.guardar_ejemplar()
+
+              app.combo_reserva_socio.current(0)
+              app.combo_reserva_ejemplar.current(1)
+              app.combo_reserva_sede.current(0)
+              app.crear_reserva()
+              select_first(app.tree_reservas)
+              app.cancelar_reserva_ui()
+
+              app.combo_prestamo_socio.current(0)
+              app.combo_prestamo_ejemplar.current(1)
+              app.combo_prestamo_sede.current(0)
+              app.var_dias.set("7")
+              app.crear_prestamo_local()
+              select_first(app.tree_prestamos)
+              app.var_estado_fisico.set("BUENO")
+              app.devolver_prestamo()
+
+              app.combo_prestamo_socio.current(0)
+              app.combo_prestamo_ejemplar.current(0)
+              app.combo_prestamo_sede.current(1)
+              app.crear_prestamo_inter()
+
+              assert app.combo_remito_prestamo["values"], "No apareció la solicitud para remito"
+              app.combo_remito_prestamo.current(0)
+              app.var_numero_remito.set("IDA-001")
+              app.crear_remito_ui()
+
+              for estado in ("DESPACHADO", "EN_TRANSITO", "RECIBIDO"):
+                  select_first(app.tree_remitos)
+                  app.avanzar_remito(estado)
+
+              select_first(app.tree_prestamos)
+              app.activar_inter()
+              select_first(app.tree_prestamos)
+              app.var_estado_fisico.set("BUENO")
+              app.devolver_prestamo()
+
+              assert app.combo_remito_retorno["values"], "No apareció el préstamo pendiente de retorno"
+              app.combo_remito_retorno.current(0)
+              app.var_numero_retorno.set("RET-001")
+              app.crear_remito_retorno_ui()
+
+              for estado in ("DESPACHADO", "EN_TRANSITO", "RECIBIDO"):
+                  select_first(app.tree_remitos)
+                  app.avanzar_remito(estado)
+
+              sedes = listar_sedes()
+              centro_id = next(s[0] for s in sedes if s[1] == "Centro")
+              ejemplar = buscar_ejemplar_por_codigo("EJ-001")
+              assert ejemplar[4] == centro_id
+              assert ejemplar[5] == "DISPONIBLE"
+
+              select_first(app.tree_remitos)
+              remito_id = int(app.fila_seleccionada(app.tree_remitos)[0])
+              estados = [x[0] for x in listar_historial_remito(remito_id)]
+              assert estados == ["PREPARADO", "DESPACHADO", "EN_TRANSITO", "RECIBIDO"]
+
+              for i in range(5):
+                  app.combo_reporte.current(i)
+                  app.generar_reporte()
+                  assert app.tree_reporte is not None
+
+              app.update_idletasks()
+              app.destroy()
+
+          print("GUI_SMOKE_OK")
+          PY

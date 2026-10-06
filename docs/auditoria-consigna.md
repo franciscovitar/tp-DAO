@@ -49,10 +49,12 @@ Se adopta esta regla:
 4. durante el retorno el ejemplar no queda disponible;
 5. al recibirlo vuelve a sede_pertenencia y queda DISPONIBLE.
 
-## Pendientes
+La interfaz permite seleccionar los préstamos interbibliotecarios ya devueltos que todavía no tienen remito de retorno y generar ese remito.
 
-- exponer el remito de retorno desde la interfaz;
-- ejecutar la interfaz visualmente;
+## Pendientes antes del cierre
+
+- ejecutar la interfaz visualmente de punta a punta;
 - reejecutar toda la suite después de los últimos cambios;
 - revisar casos límite finales;
-- preparar DER/UML final y defensa.
+- actualizar DER/UML final;
+- preparar defensa.

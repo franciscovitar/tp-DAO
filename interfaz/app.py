@@ -17,7 +17,13 @@ from datos.prestamos import (
     registrar_devolucion,
 )
 from datos.reservas import listar_reservas, registrar_reserva, cancelar_reserva
-from datos.remitos import listar_remitos, crear_remito, cambiar_estado_remito, listar_historial_remito
+from datos.remitos import (
+    listar_remitos,
+    crear_remito,
+    crear_remito_retorno,
+    cambiar_estado_remito,
+    listar_historial_remito,
+)
 from datos.reportes import (
     prestamos_activos_y_material_en_transito,
     libros_mas_solicitados_interbibliotecarios,
@@ -485,6 +491,14 @@ class BibliotecaApp(tk.Tk):
         ttk.Entry(form, textvariable=self.var_numero_remito, width=22).grid(row=1, column=1, padx=4, pady=3)
         ttk.Button(form, text="Crear remito", command=self.crear_remito_ui).grid(row=1, column=2, padx=4)
 
+        ttk.Label(form, text="Préstamo devuelto (retorno)").grid(row=2, column=0, padx=4, pady=3)
+        ttk.Label(form, text="Número de remito").grid(row=2, column=1, padx=4, pady=3)
+        self.combo_remito_retorno = ttk.Combobox(form, state="readonly", width=55)
+        self.combo_remito_retorno.grid(row=3, column=0, padx=4, pady=3)
+        self.var_numero_retorno = tk.StringVar()
+        ttk.Entry(form, textvariable=self.var_numero_retorno, width=22).grid(row=3, column=1, padx=4, pady=3)
+        ttk.Button(form, text="Crear remito de retorno", command=self.crear_remito_retorno_ui).grid(row=3, column=2, padx=4)
+
         acciones = ttk.Frame(self.tab_remitos)
         acciones.pack(fill="x", padx=8)
         ttk.Button(acciones, text="Despachar", command=lambda: self.avanzar_remito("DESPACHADO")).pack(side="left", padx=4)
@@ -509,6 +523,18 @@ class BibliotecaApp(tk.Tk):
         self.mostrar_resultado("Remito", ok, dato)
         if ok:
             self.var_numero_remito.set("")
+        self.refrescar_todo()
+
+    def crear_remito_retorno_ui(self):
+        id_prestamo = self.id_combo(self.combo_remito_retorno)
+        numero = self.var_numero_retorno.get().strip()
+        if id_prestamo is None or not numero:
+            messagebox.showerror("Remito", "Seleccione un préstamo devuelto e ingrese un número.")
+            return
+        ok, dato = crear_remito_retorno(id_prestamo, numero)
+        self.mostrar_resultado("Remito de retorno", ok, dato)
+        if ok:
+            self.var_numero_retorno.set("")
         self.refrescar_todo()
 
     def avanzar_remito(self, estado):
@@ -642,6 +668,22 @@ class BibliotecaApp(tk.Tk):
         solicitudes = [p for p in prestamos if p[-1] == "SOLICITADO"]
         self.combo_remito_prestamo["values"] = [
             f"{p[0]} - {p[2]} / {p[3]} / {p[5]} -> {p[6]}" for p in solicitudes
+        ]
+
+        devoluciones_inter = []
+        for p in prestamos:
+            if p[-1] != "DEVUELTO" or p[5] == p[6]:
+                continue
+            tiene_retorno = any(
+                r[2] == p[0] and r[3] == p[6] and r[4] == p[5]
+                for r in remitos
+            )
+            if not tiene_retorno:
+                devoluciones_inter.append(p)
+
+        self.combo_remito_retorno["values"] = [
+            f"{p[0]} - {p[2]} / {p[3]} / {p[6]} -> {p[5]}"
+            for p in devoluciones_inter
         ]
 
     def mostrar_resultado(self, titulo, ok, dato):

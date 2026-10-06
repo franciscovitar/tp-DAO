@@ -8,10 +8,9 @@ Actualizado: 2026-10-06
 - Repositorio: franciscovitar/tp-DAO.
 - Código en Python + SQLite.
 - Mantener el nivel y estilo de la cátedra; evitar sobreingeniería.
-- Patrones enseñados en el material 2026 recibido: Singleton, Factory y Observer.
 - Patrones elegidos e implementados: Observer + Singleton.
 - State descartado; Factory queda como alternativa.
-- La cátedra exige interfaz gráfica, formularios y validaciones, pero en las fuentes disponibles no aparece prescripta una librería concreta. Se eligió Tkinter/ttk por ser parte de la biblioteca estándar de Python y no agregar dependencias externas.
+- Interfaz: Tkinter/ttk como decisión técnica mínima porque las fuentes disponibles exigen interfaz gráfica pero no prescriben toolkit.
 
 ## Implementado
 
@@ -19,42 +18,32 @@ Actualizado: 2026-10-06
 - Préstamo local, devolución y reservas.
 - Solicitud de préstamo interbibliotecario.
 - Remito con PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO.
-- Historial de remito append-only.
+- Historial append-only.
 - Recepción con actualización de sede_actual.
 - Activación del préstamo interbibliotecario luego de recibir.
-- Observer para monitoreo de cambios del Remito.
-- DatabaseSingleton para centralizar el acceso a SQLite.
+- Observer para cambios del Remito.
+- DatabaseSingleton para SQLite.
 - Cuatro reportes no triviales.
-- Primera interfaz gráfica funcional con pestañas para:
-  - sedes;
-  - socios;
-  - catálogo y ejemplares;
-  - préstamos y devoluciones;
-  - reservas;
-  - remitos;
-  - reportes.
+- Primera interfaz gráfica.
+- Flujo de retorno del ejemplar interbibliotecario mediante un segundo remito.
 
-## Interfaz
+## Regla de retorno adoptada
 
-La pantalla permite altas y modificaciones básicas de sedes, socios y libros; alta de ejemplares; préstamo local e interbibliotecario; devolución; reserva/cancelación; preparación y avance del remito; consulta del historial; y visualización de los cuatro reportes.
+Después de la devolución de un préstamo interbibliotecario se genera un remito desde la sede de devolución hacia la sede de pertenencia. Al crear ese remito el ejemplar deja de estar disponible; al recibirlo vuelve a sede_pertenencia y queda DISPONIBLE.
 
-Las reglas importantes siguen en la lógica/datos. La interfaz valida campos requeridos y formatos simples, pero no reemplaza las validaciones de negocio.
+Esta regla completa un punto que la consigna deja abierto y se documenta como decisión de diseño del grupo.
 
 ## Verificación
 
 - El checkpoint anterior del núcleo tenía 26 tests registrados como aprobados.
-- El nuevo bloque de interfaz fue validado por sintaxis con py_compile.
-- Se verificó que tkinter puede importarse en el entorno disponible.
-- Falta una ejecución visual completa de la interfaz en un entorno con escritorio y una regresión completa del proyecto después de este bloque.
+- La interfaz fue validada por sintaxis y se verificó el import de tkinter.
+- El flujo de retorno nuevo fue ejecutado localmente de punta a punta y pasó.
+- Falta reejecutar la suite completa después de integrar estos cambios.
 
 ## Pendiente inmediato
 
-1. Ejecutar la interfaz visualmente y corregir detalles de uso si aparecen.
-2. Resolver o validar el retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
-3. Auditar la consigna requisito por requisito.
-4. Completar pruebas de regresión y casos límite.
+1. Exponer el remito de retorno en la interfaz.
+2. Ejecutar la interfaz visualmente.
+3. Reejecutar regresión completa.
+4. Terminar auditoría visual/funcional y diagramas.
 5. Preparar defensa.
-
-## Punto abierto
-
-El retorno del ejemplar luego de una devolución interbibliotecaria no está definido expresamente en la consigna. No fijarlo como regla definitiva hasta validarlo con el profesor o material oficial.

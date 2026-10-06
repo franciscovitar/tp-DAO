@@ -10,53 +10,41 @@ Estado: terminada.
 Estado: terminada.
 
 ## Etapa 4 - Interbibliotecario y remitos
-Estado: implementada en primera versión.
+Estado: terminada a nivel de lógica.
 
-Pendiente: validar el flujo de retorno después de una devolución interbibliotecaria.
+Incluye ida, trazabilidad, recepción, préstamo y retorno del ejemplar a su sede de pertenencia mediante otro remito.
+
+Pendiente: exponer el retorno en la interfaz.
 
 ## Etapa 5 - Patrones
 Estado: terminada.
 
-Observer + Singleton implementados. Factory queda como alternativa.
+Observer + Singleton implementados.
 
 ## Etapa 6 - Reportes
 Estado: terminada.
 
-Implementados:
-1. préstamos activos y material en tránsito;
-2. libros más solicitados entre sedes;
-3. disponibilidad por sede;
-4. movimientos origen/destino y tiempo promedio de tránsito.
+Cuatro reportes no triviales implementados.
 
 ## Etapa 7 - Interfaz
 Estado: primera versión implementada.
 
-Tkinter/ttk con pestañas para sedes, socios, catálogo, préstamos, reservas, remitos y reportes.
-
 Pendiente:
+- botón/formulario de remito de retorno;
 - prueba visual completa;
-- ajustes de comodidad/errores detectados durante uso real;
-- decidir si hace falta algún formulario adicional después de la auditoría de consigna.
+- ajustes detectados durante uso real.
 
 ## Etapa 8 - Pruebas finales
 Estado: en curso.
 
-Reejecutar regresión completa y cubrir reglas normales, límites y errores relevantes.
+El flujo de retorno fue verificado localmente. Falta regresión completa del repositorio.
 
 ## Etapa 9 - Auditoría de consigna
-Estado: pendiente.
+Estado: primera auditoría realizada.
 
-Revisar cada requisito como:
-- implementado;
-- probado;
-- visible desde la interfaz;
-- explicable en la defensa.
+Ver docs/auditoria-consigna.md.
 
 ## Etapa 10 - Defensa
 Estado: pendiente.
 
-Poder explicar clases, relaciones, Libro vs Ejemplar, sede de pertenencia vs actual, estados del remito, Observer, Singleton, transacciones, interfaz y reportes.
-
-## Regla de desarrollo
-
-No usar una técnica más compleja si lo visto en clase resuelve correctamente el problema.
+Preparar explicación de modelo, persistencia, remitos, patrones, transacciones, interfaz, reportes y decisiones del grupo.

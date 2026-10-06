@@ -3,10 +3,56 @@ import sqlite3
 ARCHIVO_BD = "biblioteca.db"
 
 
+class DatabaseSingleton:
+    _instance = None
+
+    def __new__(cls, nombre_archivo=ARCHIVO_BD):
+        if cls._instance is None:
+            cls._instance = super(DatabaseSingleton, cls).__new__(cls)
+            cls._instance.connection = None
+            cls._instance.nombre_archivo = None
+
+        cls._instance._usar_base(nombre_archivo)
+        return cls._instance
+
+    def _usar_base(self, nombre_archivo):
+        if self.nombre_archivo != nombre_archivo:
+            self.close_connection()
+            self.nombre_archivo = nombre_archivo
+            self._initialize_connection()
+        elif not self._conexion_activa():
+            self._initialize_connection()
+
+    def _initialize_connection(self):
+        self.connection = sqlite3.connect(self.nombre_archivo)
+        self.connection.execute("PRAGMA foreign_keys = ON")
+
+    def _conexion_activa(self):
+        if self.connection is None:
+            return False
+        try:
+            self.connection.execute("SELECT 1")
+            return True
+        except sqlite3.ProgrammingError:
+            return False
+
+    def obtener_conexion(self):
+        if not self._conexion_activa():
+            self._initialize_connection()
+        return self.connection
+
+    def close_connection(self):
+        if self.connection is not None:
+            try:
+                self.connection.close()
+            except sqlite3.ProgrammingError:
+                pass
+            self.connection = None
+
+
 def conectar(nombre_archivo=ARCHIVO_BD):
-    conexion = sqlite3.connect(nombre_archivo)
-    conexion.execute("PRAGMA foreign_keys = ON")
-    return conexion
+    db = DatabaseSingleton(nombre_archivo)
+    return db.obtener_conexion()
 
 
 def crear_tablas(nombre_archivo=ARCHIVO_BD):

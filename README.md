@@ -11,19 +11,16 @@ Ya están implementados:
 - préstamo local y devolución;
 - reservas;
 - solicitud de préstamo interbibliotecario;
-- remitos con estados PREPARADO, DESPACHADO, EN_TRANSITO y RECIBIDO;
-- historial de estados;
+- remitos con trazabilidad completa de estados;
 - actualización de ubicación del ejemplar;
 - activación del préstamo al llegar a destino;
-- patrón Observer aplicado al monitoreo del remito;
+- patrón Observer para monitoreo del Remito;
+- patrón Singleton para centralizar el acceso a SQLite;
 - pruebas con pytest.
 
-Patrones definidos para el TP:
-- Observer: implementado.
-- Singleton: próximo bloque.
-- Factory: alternativa si aparece una necesidad real.
+Los dos patrones obligatorios ya están implementados.
 
-Ver docs/estado-actual.md para retomar el trabajo sin depender del historial del chat.
+Ver `docs/estado-actual.md` para retomar el trabajo sin depender del historial del chat.
 
 ## Estructura
 

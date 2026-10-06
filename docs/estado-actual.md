@@ -9,13 +9,13 @@ Actualizado: 2026-10-06
 - Código en Python + SQLite.
 - Mantener el nivel y estilo de la cátedra; evitar sobreingeniería.
 - Patrones enseñados en el material 2026 recibido: Singleton, Factory y Observer.
-- Patrones elegidos para el TP: Observer + Singleton.
+- Patrones elegidos e implementados: Observer + Singleton.
 - State queda descartado porque no aparece en el material de patrones recibido.
 - Factory queda como alternativa, no como requisito propio.
 
 ## Implementado
 
-- Sede, Socio, Libro, Ejemplar, Prestamo y Reserva.
+- Sede, Socio, Libro, Ejemplar, Prestamo, Reserva y Remito.
 - SQLite y operaciones básicas.
 - Duplicados de DNI, ISBN y código de ejemplar.
 - Préstamo local y devolución.
@@ -27,17 +27,17 @@ Actualizado: 2026-10-06
 - Recepción actualiza sede_actual.
 - Activación del préstamo interbibliotecario después de recibir.
 - Observer aplicado a cambios de Remito.
+- DatabaseSingleton como punto único de acceso a la conexión SQLite.
 
 ## Verificación
 
-Checkpoint de remitos/Observer probado localmente antes de subir: 19 tests pasaron.
+Checkpoint con Singleton probado localmente: 22 tests pasaron.
 
 ## Pendiente inmediato
 
-1. Implementar Singleton para el acceso a SQLite siguiendo el DatabaseSingleton de la cátedra.
+1. Implementar los cuatro reportes no triviales.
 2. Resolver/validar retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
-3. Implementar los cuatro reportes.
-4. Luego avanzar con interfaz.
+3. Luego avanzar con interfaz y auditoría final.
 
 ## Punto abierto
 

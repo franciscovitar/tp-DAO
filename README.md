@@ -4,4 +4,39 @@
 
 Repositorio del trabajo práctico integrador de Desarrollo de Aplicaciones con Objetos.
 
-Por ahora el proyecto está en etapa de análisis y diseño inicial.
+## Estado actual
+
+Está terminada la primera base del proyecto:
+
+- clases Sede, Socio, Libro y Ejemplar;
+- base SQLite con las cuatro tablas iniciales;
+- altas, búsquedas y modificaciones básicas;
+- control de DNI, ISBN y código de ejemplar duplicados;
+- baja lógica de sedes y habilitación de socios;
+- pruebas iniciales con pytest.
+
+Todavía no están implementados préstamos, reservas, remitos, interfaz ni reportes.
+
+## Estructura
+
+```
+modelos/
+datos/
+tests/
+docs/
+main.py
+```
+
+## Ejecución
+
+Para crear la base de datos:
+
+```
+python main.py
+```
+
+Para ejecutar las pruebas:
+
+```
+python -m pytest -q
+```

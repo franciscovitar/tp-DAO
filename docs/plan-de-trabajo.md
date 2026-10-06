@@ -36,7 +36,7 @@ Pendiente:
 ## Etapa 8 - Pruebas finales
 Estado: en curso.
 
-El flujo de ida/retorno y la consulta de vencidos se verificaron de forma dirigida. Falta regresión completa del repositorio después de los últimos cambios.
+La suite contiene 35 tests. Se verificaron de forma dirigida el flujo de ida/retorno, la consulta de vencidos, la administración de ejemplares y las nuevas guardas de validación. Falta ejecutar la regresión completa de los 35 tests sobre el main actual.
 
 ## Etapa 9 - Auditoría y documentación
 Estado: avanzada.

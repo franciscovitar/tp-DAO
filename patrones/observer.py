@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class Subject:
@@ -22,3 +23,16 @@ class Observer(ABC):
     @abstractmethod
     def update(self, subject):
         pass
+
+
+class HistorialRemitoObserver(Observer):
+
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def update(self, subject):
+        self.cursor.execute("""
+            INSERT INTO historial_remito (remito_id, estado, fecha_hora)
+            VALUES (?, ?, ?)
+        """, (subject.id, subject.estado,
+              datetime.now().isoformat(timespec="seconds")))

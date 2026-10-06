@@ -25,18 +25,19 @@ Estado: terminada.
 Los cuatro reportes obligatorios están implementados. Además se agregó préstamos vencidos para hacer visible el control de fechas de vencimiento.
 
 ## Etapa 7 - Interfaz
-Estado: primera versión funcional implementada.
+Estado: funcionalmente verificada.
 
 Incluye sedes, socios, catálogo, préstamos, reservas, remitos de ida y retorno, historial y reportes.
 
-Pendiente:
-- prueba visual completa;
-- ajustes detectados durante uso real.
+Se ejecutó un smoke end-to-end bajo Xvfb que recorrió los flujos principales. Después de revisar la captura visual se acomodaron los botones de Sedes y Socios para evitar recortes en el ancho de la ventana.
+
+Pendiente sólo una revisión estética rápida en el equipo donde se vaya a presentar.
 
 ## Etapa 8 - Pruebas finales
-Estado: en curso.
+Estado: terminada.
 
-La suite contiene 35 tests. Se verificaron de forma dirigida el flujo de ida/retorno, la consulta de vencidos, la administración de ejemplares y las nuevas guardas de validación. Falta ejecutar la regresión completa de los 35 tests sobre el main actual.
+Regresión completa: **36 tests aprobados en 0.65 s**.
+El smoke end-to-end de la GUI también terminó correctamente con `GUI_SMOKE_OK`.
 
 ## Etapa 9 - Auditoría y documentación
 Estado: avanzada.

@@ -2,31 +2,30 @@
 
 **Tema 1:** Biblioteca - Sistema de Préstamos Interbibliotecarios
 
-## Estado actual
+Aplicación desarrollada en Python con SQLite y una interfaz gráfica en Tkinter/ttk.
 
-Implementado:
-- modelo principal y persistencia SQLite;
-- préstamo local, devolución y reservas;
-- solicitud interbibliotecaria;
+## Funcionalidades
+
+- administración de sedes y socios;
+- catálogo de libros y ejemplares físicos;
+- préstamos locales e interbibliotecarios;
+- reservas y devoluciones;
 - remitos de ida y retorno con trazabilidad;
-- Observer aplicado al historial del Remito;
-- Singleton para acceso a SQLite;
-- cuatro reportes obligatorios más préstamos vencidos;
-- interfaz gráfica con Tkinter/ttk;
-- UML, DER, casos de uso y diagramas de patrones.
+- consulta de disponibilidad;
+- cinco reportes de gestión;
+- patrones Observer y Singleton.
 
-La interfaz permite trabajar con sedes, socios, catálogo, ejemplares, préstamos, reservas, remitos y reportes.
+El flujo interbibliotecario mantiene la sede de pertenencia del ejemplar y registra su ubicación actual durante el traslado. Los remitos siguen el ciclo:
+
+`PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO`
 
 ## Documentación
 
-- `docs/estado-actual.md`: checkpoint para retomar el TP.
-- `docs/auditoria-consigna.md`: cobertura requisito por requisito.
-- `docs/prueba-manual.md`: recorrido de prueba antes de entregar.
-- `docs/defensa.md`: decisiones que hay que poder explicar.
-- `docs/modelo.puml`: UML del dominio.
+- `docs/diseno.md`: decisiones principales del modelo y funcionamiento.
+- `docs/modelo.puml`: diagrama UML del dominio.
 - `docs/der.puml`: modelo relacional.
 - `docs/casos-uso.puml`: casos de uso.
-- `docs/patrones.puml`: Observer y Singleton.
+- `docs/patrones.puml`: aplicación de Observer y Singleton.
 
 ## Estructura
 
@@ -42,12 +41,14 @@ main.py
 
 ## Ejecución
 
-```
+```bash
 python main.py
 ```
 
-Pruebas:
+## Pruebas
 
-```
+```bash
 python -m pytest -q
 ```
+
+La suite actual contiene 36 pruebas automatizadas.

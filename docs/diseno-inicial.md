@@ -85,13 +85,13 @@ El material 2026 recibido de la cátedra enseña Singleton, Factory y Observer.
 
 Remito funciona como Subject. Los observadores se registran con attach() y reciben update() cuando el remito cambia correctamente de estado.
 
-Se usa para monitoreo de cambios, exactamente uno de los casos de uso mostrados por la cátedra.
+Se usa para monitoreo de cambios, exactamente uno de los casos de uso mostrados por la cátedra. HistorialRemitoObserver es el observador concreto utilizado por la aplicación: cuando recibe una actualización agrega el nuevo estado a historial_remito usando la misma transacción de la operación.
 
-La trazabilidad persistente se guarda además en historial_remito dentro de la transacción correspondiente.
+Así el patrón no queda solamente definido: participa en la trazabilidad real del remito.
 
 ### Singleton - elegido
 
-Se aplicará al acceso a SQLite siguiendo el ejemplo DatabaseSingleton entregado por la cátedra.
+Se aplica al acceso a SQLite siguiendo el ejemplo DatabaseSingleton entregado por la cátedra.
 
 ### Factory - alternativa
 

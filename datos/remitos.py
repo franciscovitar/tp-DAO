@@ -2,6 +2,7 @@ from datetime import datetime
 
 from datos.base_datos import conectar, ARCHIVO_BD
 from modelos.remito import Remito
+from patrones.observer import HistorialRemitoObserver
 
 
 def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
@@ -218,17 +219,19 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
         estado=fila[8], id=fila[0]
     )
 
+    historial_observer = HistorialRemitoObserver(cursor)
+    remito.attach(historial_observer)
+
     if observadores is not None:
         for observer in observadores:
             remito.attach(observer)
 
-    if not remito.cambiar_estado(nuevo_estado):
-        conexion.close()
-        return False, "Cambio de estado no permitido"
-
-    ahora = datetime.now().isoformat(timespec="seconds")
-
     try:
+        if not remito.cambiar_estado(nuevo_estado):
+            conexion.close()
+            return False, "Cambio de estado no permitido"
+
+        ahora = datetime.now().isoformat(timespec="seconds")
         fecha_despacho = fila[6]
         fecha_recepcion = fila[7]
         if nuevo_estado == "DESPACHADO":
@@ -241,11 +244,6 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
             SET estado = ?, fecha_despacho = ?, fecha_recepcion = ?
             WHERE id = ?
         """, (nuevo_estado, fecha_despacho, fecha_recepcion, id_remito))
-
-        cursor.execute("""
-            INSERT INTO historial_remito (remito_id, estado, fecha_hora)
-            VALUES (?, ?, ?)
-        """, (id_remito, nuevo_estado, ahora))
 
         if nuevo_estado == "DESPACHADO":
             cursor.execute("""

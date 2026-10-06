@@ -21,11 +21,11 @@ Actualizado: 2026-10-06
 - Historial append-only.
 - Recepción con actualización de sede_actual.
 - Activación del préstamo interbibliotecario luego de recibir.
+- Retorno del ejemplar interbibliotecario mediante un segundo remito.
 - Observer para cambios del Remito.
 - DatabaseSingleton para SQLite.
 - Cuatro reportes no triviales.
-- Primera interfaz gráfica.
-- Flujo de retorno del ejemplar interbibliotecario mediante un segundo remito.
+- Interfaz gráfica para sedes, socios, catálogo, préstamos, reservas, remitos, retorno y reportes.
 
 ## Regla de retorno adoptada
 
@@ -35,15 +35,16 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 
 ## Verificación
 
-- El checkpoint anterior del núcleo tenía 26 tests registrados como aprobados.
-- La interfaz fue validada por sintaxis y se verificó el import de tkinter.
-- El flujo de retorno nuevo fue ejecutado localmente de punta a punta y pasó.
-- Falta reejecutar la suite completa después de integrar estos cambios.
+- El núcleo anterior tenía 26 tests registrados como aprobados.
+- La interfaz base fue validada por sintaxis y se verificó el import de tkinter.
+- El flujo de retorno fue ejecutado localmente de punta a punta y pasó.
+- El retorno ya está expuesto en la interfaz.
+- Falta una ejecución visual completa de la interfaz y una regresión completa después de los últimos cambios.
 
 ## Pendiente inmediato
 
-1. Exponer el remito de retorno en la interfaz.
-2. Ejecutar la interfaz visualmente.
-3. Reejecutar regresión completa.
-4. Terminar auditoría visual/funcional y diagramas.
+1. Ejecutar la interfaz visualmente de punta a punta.
+2. Reejecutar regresión completa.
+3. Revisar casos límite finales.
+4. Actualizar UML/DER final.
 5. Preparar defensa.

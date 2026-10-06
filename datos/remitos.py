@@ -226,13 +226,12 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
         for observer in observadores:
             remito.attach(observer)
 
-    if not remito.cambiar_estado(nuevo_estado):
-        conexion.close()
-        return False, "Cambio de estado no permitido"
-
-    ahora = datetime.now().isoformat(timespec="seconds")
-
     try:
+        if not remito.cambiar_estado(nuevo_estado):
+            conexion.close()
+            return False, "Cambio de estado no permitido"
+
+        ahora = datetime.now().isoformat(timespec="seconds")
         fecha_despacho = fila[6]
         fecha_recepcion = fila[7]
         if nuevo_estado == "DESPACHADO":

@@ -225,6 +225,16 @@ def test_devolucion_rechaza_estado_fisico_invalido():
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 
+def test_no_activa_interbibliotecario_con_dias_invalidos():
+    from datos.prestamos import activar_prestamo_interbibliotecario
+
+    ok, mensaje = activar_prestamo_interbibliotecario(
+        999, 0, ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La cantidad de días debe ser mayor a cero"
+
+
 def test_reserva_marca_el_ejemplar_como_reservado():
     from datos.reservas import registrar_reserva, buscar_reserva
 

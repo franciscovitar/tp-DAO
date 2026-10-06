@@ -12,40 +12,35 @@ Estado: terminada.
 ## Etapa 4 - Interbibliotecario y remitos
 Estado: implementada en primera versión.
 
-Incluye solicitud, remito, trazabilidad, recepción y Observer.
-
 Pendiente: validar el flujo de retorno después de una devolución interbibliotecaria.
 
 ## Etapa 5 - Patrones
 Estado: terminada.
 
-- Observer aplicado al monitoreo del Remito.
-- Singleton aplicado al acceso a SQLite siguiendo el ejemplo DatabaseSingleton de la cátedra.
-- Factory queda como alternativa si aparece una necesidad real.
+Observer + Singleton implementados. Factory queda como alternativa.
 
 ## Etapa 6 - Reportes
+Estado: terminada.
 
-Implementar:
+Implementados:
 1. préstamos activos y material en tránsito;
 2. libros más solicitados entre sedes;
 3. disponibilidad por sede;
 4. movimientos origen/destino y tiempo promedio de tránsito.
 
 ## Etapa 7 - Interfaz
+Estado: pendiente.
 
-Agregarla cuando el modelo y la persistencia estén estables. Las reglas de negocio no deben quedar solamente en la pantalla.
+Agregarla con formularios claros y validaciones, sin mover reglas de negocio a la pantalla.
 
 ## Etapa 8 - Pruebas finales
-
-Cubrir reglas normales, límites y errores relevantes.
+Estado: en curso.
 
 ## Etapa 9 - Auditoría de consigna
-
-Revisar cada requisito como hecho, probado, visible en interfaz y explicable en defensa.
+Estado: pendiente.
 
 ## Etapa 10 - Defensa
-
-Poder explicar clases, relaciones, Libro vs Ejemplar, sede de pertenencia vs actual, estados del remito, Observer, Singleton, transacciones y reportes.
+Estado: pendiente.
 
 ## Regla de desarrollo
 

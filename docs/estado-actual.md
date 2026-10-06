@@ -10,34 +10,31 @@ Actualizado: 2026-10-06
 - Mantener el nivel y estilo de la cátedra; evitar sobreingeniería.
 - Patrones enseñados en el material 2026 recibido: Singleton, Factory y Observer.
 - Patrones elegidos e implementados: Observer + Singleton.
-- State queda descartado porque no aparece en el material de patrones recibido.
-- Factory queda como alternativa, no como requisito propio.
+- State descartado; Factory queda como alternativa.
 
 ## Implementado
 
 - Sede, Socio, Libro, Ejemplar, Prestamo, Reserva y Remito.
-- SQLite y operaciones básicas.
-- Duplicados de DNI, ISBN y código de ejemplar.
-- Préstamo local y devolución.
-- Reservas.
+- Préstamo local, devolución y reservas.
 - Solicitud de préstamo interbibliotecario.
-- Remito y tablas de trazabilidad.
-- Flujo PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO.
+- Remito con PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO.
 - Historial de remito append-only.
-- Recepción actualiza sede_actual.
-- Activación del préstamo interbibliotecario después de recibir.
-- Observer aplicado a cambios de Remito.
-- DatabaseSingleton como punto único de acceso a la conexión SQLite.
+- Recepción con actualización de sede_actual.
+- Activación del préstamo interbibliotecario luego de recibir.
+- Observer para monitoreo de cambios del Remito.
+- DatabaseSingleton para centralizar el acceso a SQLite.
+- Cuatro reportes no triviales.
 
 ## Verificación
 
-Checkpoint con Singleton probado localmente: 22 tests pasaron.
+Checkpoint actual probado localmente: 26 tests pasaron.
 
 ## Pendiente inmediato
 
-1. Implementar los cuatro reportes no triviales.
-2. Resolver/validar retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
-3. Luego avanzar con interfaz y auditoría final.
+1. Resolver o validar el retorno del ejemplar a sede de pertenencia después de una devolución interbibliotecaria.
+2. Implementar interfaz.
+3. Hacer auditoría requisito por requisito.
+4. Preparar defensa.
 
 ## Punto abierto
 

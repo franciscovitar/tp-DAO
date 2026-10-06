@@ -16,6 +16,7 @@ from datos.remitos import (
     cambiar_estado_remito,
     listar_historial_remito
 )
+from datos.reportes import disponibilidad_catalogo_por_sede
 from modelos.sede import Sede
 from modelos.socio import Socio
 from modelos.libro import Libro
@@ -74,12 +75,15 @@ def test_ejemplar_interbibliotecario_vuelve_a_su_sede_de_pertenencia():
         id_prestamo, nombre_archivo=ARCHIVO_TEST)[0]
     assert registrar_devolucion(
         id_prestamo, "BUENO", ARCHIVO_TEST)[0]
+    assert buscar_ejemplar_por_codigo(
+        "EJ-001", ARCHIVO_TEST)[5] == "PENDIENTE_RETORNO"
+    assert disponibilidad_catalogo_por_sede(ARCHIVO_TEST) == []
 
     ok, id_remito_retorno = crear_remito_retorno(
         id_prestamo, "RET-001", ARCHIVO_TEST)
     assert ok
     assert buscar_ejemplar_por_codigo(
-        "EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"
+        "EJ-001", ARCHIVO_TEST)[5] == "PENDIENTE_RETORNO"
 
     avanzar_hasta_recibido(id_remito_retorno)
 

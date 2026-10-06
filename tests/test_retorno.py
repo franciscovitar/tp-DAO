@@ -8,7 +8,8 @@ from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
 from datos.prestamos import (
     solicitar_prestamo_interbibliotecario,
     activar_prestamo_interbibliotecario,
-    registrar_devolucion
+    registrar_devolucion,
+    listar_prestamos_pendientes_retorno
 )
 from datos.remitos import (
     crear_remito,
@@ -115,3 +116,33 @@ def test_no_crea_dos_remitos_de_retorno_para_el_mismo_prestamo():
 
     assert not ok
     assert mensaje == "El préstamo ya tiene un remito de retorno"
+
+
+def test_detecta_retorno_aunque_las_sedes_tengan_el_mismo_nombre():
+    origen = Sede("Centro", "Colon 100", "111", "uno@mail.com", "8 a 20")
+    destino = Sede("Centro", "Rivadavia 200", "222", "dos@mail.com", "8 a 20")
+    agregar_sede(origen, ARCHIVO_TEST)
+    agregar_sede(destino, ARCHIVO_TEST)
+
+    socio = Socio("40111222", "Ana", "Perez", "111", "ana@mail.com")
+    agregar_socio(socio, ARCHIVO_TEST)
+
+    libro = Libro("9789500000001", "Uno", "Autor", "Editorial", 2020)
+    agregar_libro(libro, ARCHIVO_TEST)
+
+    ejemplar = Ejemplar("EJ-001", libro, origen)
+    agregar_ejemplar(ejemplar, ARCHIVO_TEST)
+
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, id_remito = crear_remito(id_prestamo, "IDA-001", ARCHIVO_TEST)
+    avanzar_hasta_recibido(id_remito)
+    activar_prestamo_interbibliotecario(
+        id_prestamo, nombre_archivo=ARCHIVO_TEST)
+    registrar_devolucion(id_prestamo, "BUENO", ARCHIVO_TEST)
+
+    pendientes = listar_prestamos_pendientes_retorno(ARCHIVO_TEST)
+
+    assert len(pendientes) == 1
+    assert pendientes[0][0] == id_prestamo
+

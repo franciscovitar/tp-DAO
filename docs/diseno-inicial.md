@@ -27,6 +27,7 @@ Ejemplar:
 - DISPONIBLE
 - RESERVADO
 - PRESTADO
+- PENDIENTE_RETORNO
 - EN_TRANSITO
 - BAJA
 
@@ -59,8 +60,8 @@ El remito sólo avanza en ese orden. Cada cambio agrega un registro en historial
 5. El remito pasa por EN_TRANSITO.
 6. Al RECIBIR, se actualiza sede_actual y el ejemplar queda RESERVADO para el socio.
 7. Recién entonces se activa el préstamo y el ejemplar pasa a PRESTADO.
-8. Cuando el socio devuelve el material, el préstamo queda DEVUELTO.
-9. Si el ejemplar pertenece a otra sede, se genera un remito de retorno.
+8. Cuando el socio devuelve el material, el préstamo queda DEVUELTO. Si es interbibliotecario, el ejemplar queda PENDIENTE_RETORNO y no cuenta como disponible.
+9. Se genera un remito de retorno. Al despacharlo, el ejemplar pasa a EN_TRANSITO.
 10. Al recibir el retorno, sede_actual vuelve a sede_pertenencia y el ejemplar queda DISPONIBLE.
 
 ## Persistencia

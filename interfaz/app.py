@@ -8,7 +8,7 @@ from modelos.ejemplar import Ejemplar
 from datos.sedes import listar_sedes, agregar_sede, modificar_sede, cambiar_estado_sede
 from datos.socios import listar_socios, agregar_socio, modificar_socio, cambiar_habilitacion_socio
 from datos.libros import listar_libros, agregar_libro, modificar_libro
-from datos.ejemplares import listar_ejemplares, agregar_ejemplar
+from datos.ejemplares import listar_ejemplares, agregar_ejemplar, cambiar_estado_ejemplar
 from datos.prestamos import (
     listar_prestamos,
     registrar_prestamo_local,
@@ -284,6 +284,11 @@ class BibliotecaApp(tk.Tk):
             (50, 90, 220, 150, 150, 100, 100),
         )
         self.tree_ejemplares.configure(height=7)
+        ttk.Button(
+            self.tab_catalogo,
+            text="Activar / desactivar ejemplar",
+            command=self.toggle_ejemplar
+        ).pack(pady=4)
 
     def guardar_libro(self):
         isbn = self.libro_vars["isbn"].get().strip()
@@ -350,6 +355,24 @@ class BibliotecaApp(tk.Tk):
             return
         self.var_codigo_ejemplar.set("")
         messagebox.showinfo("Ejemplar", "Ejemplar registrado.")
+        self.refrescar_todo()
+
+    def toggle_ejemplar(self):
+        fila = self.fila_seleccionada(self.tree_ejemplares)
+        if fila is None:
+            messagebox.showwarning("Ejemplar", "Seleccione un ejemplar.")
+            return
+
+        estado_actual = fila[5]
+        nuevo_estado = "DISPONIBLE" if estado_actual == "BAJA" else "BAJA"
+
+        if not cambiar_estado_ejemplar(int(fila[0]), nuevo_estado):
+            messagebox.showerror(
+                "Ejemplar",
+                "El ejemplar sólo puede activarse o desactivarse cuando no está reservado, prestado ni en tránsito."
+            )
+            return
+
         self.refrescar_todo()
 
     def crear_tab_prestamos(self):

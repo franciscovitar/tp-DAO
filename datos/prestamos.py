@@ -241,7 +241,7 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT ejemplar_id, estado
+        SELECT ejemplar_id, estado, sede_origen_id, sede_destino_id
         FROM prestamos
         WHERE id = ?
     """, (id_prestamo,))
@@ -255,6 +255,11 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
         return False, "El préstamo no está activo"
 
     hoy = date.today().isoformat()
+    estado_ejemplar = (
+        "PENDIENTE_RETORNO"
+        if prestamo[2] != prestamo[3]
+        else "DISPONIBLE"
+    )
 
     try:
         cursor.execute("""
@@ -267,7 +272,7 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
             UPDATE ejemplares
             SET estado = ?, estado_fisico = ?
             WHERE id = ?
-        """, ("DISPONIBLE", estado_fisico, prestamo[0]))
+        """, (estado_ejemplar, estado_fisico, prestamo[0]))
 
         conexion.commit()
         conexion.close()

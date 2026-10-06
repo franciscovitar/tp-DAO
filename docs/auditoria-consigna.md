@@ -15,7 +15,7 @@ Actualizada: 2026-10-06
 
 ## Validaciones
 
-- No prestar ejemplares no disponibles: cubierta. Un ejemplar desactivado queda en estado BAJA y tampoco puede prestarse ni reservarse.
+- No prestar ejemplares no disponibles: cubierta. Los estados BAJA y PENDIENTE_RETORNO tampoco pueden prestarse ni reservarse.
 - No prestar a socios inhabilitados: cubierta.
 - Controlar vencimientos: se guarda la fecha de vencimiento y existe un reporte de préstamos activos vencidos.
 - Mantener trazabilidad: cubierta con historial append-only registrado por Observer.

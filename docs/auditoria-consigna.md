@@ -58,5 +58,4 @@ La interfaz permite seleccionar los préstamos interbibliotecarios ya devueltos 
 - ejecutar la interfaz visualmente de punta a punta;
 - reejecutar toda la suite después de los últimos cambios;
 - revisar casos límite finales;
-- actualizar DER/UML y casos de uso finales;
 - preparar defensa.

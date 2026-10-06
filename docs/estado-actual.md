@@ -46,5 +46,4 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 1. Ejecutar la interfaz visualmente de punta a punta.
 2. Reejecutar regresión completa.
 3. Revisar casos límite finales.
-4. Actualizar UML/DER y casos de uso finales.
-5. Preparar defensa.
+4. Preparar defensa.

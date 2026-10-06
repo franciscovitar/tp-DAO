@@ -90,6 +90,17 @@ def test_flujo_interbibliotecario_hasta_activar_prestamo():
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 
+def test_numero_de_remito_es_obligatorio():
+    _, destino, socio, ejemplar = crear_datos()
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+
+    ok, mensaje = crear_remito(id_prestamo, "   ", ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "Número de remito obligatorio"
+
+
 def test_no_permite_saltar_estados_del_remito():
     _, destino, socio, ejemplar = crear_datos()
     _, id_prestamo = solicitar_prestamo_interbibliotecario(

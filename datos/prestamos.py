@@ -5,6 +5,9 @@ from datos.base_datos import conectar, ARCHIVO_BD
 
 def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
                               nombre_archivo=ARCHIVO_BD):
+    if dias <= 0:
+        return False, "La cantidad de días debe ser mayor a cero"
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 
@@ -186,6 +189,9 @@ def solicitar_prestamo_interbibliotecario(id_socio, id_ejemplar,
 
 def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
                                           nombre_archivo=ARCHIVO_BD):
+    if dias <= 0:
+        return False, "La cantidad de días debe ser mayor a cero"
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 
@@ -237,6 +243,9 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
 
 def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
                           nombre_archivo=ARCHIVO_BD):
+    if estado_fisico not in ("BUENO", "DANADO"):
+        return False, "Estado físico inválido"
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 

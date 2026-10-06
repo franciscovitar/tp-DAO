@@ -139,6 +139,18 @@ def test_registrar_prestamo_local_cambia_estado_del_ejemplar():
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 
+def test_no_registra_prestamo_con_dias_invalidos():
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    from datos.prestamos import registrar_prestamo_local
+
+    ok, mensaje = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, 0, ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La cantidad de días debe ser mayor a cero"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
+
+
 def test_no_presta_a_socio_inhabilitado():
     from datos.prestamos import registrar_prestamo_local
 
@@ -195,6 +207,32 @@ def test_devolucion_cierra_prestamo_y_libera_ejemplar():
     guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
     assert guardado[5] == "DISPONIBLE"
     assert guardado[6] == "DANADO"
+
+
+def test_devolucion_rechaza_estado_fisico_invalido():
+    from datos.prestamos import registrar_prestamo_local, registrar_devolucion, buscar_prestamo
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+
+    ok, mensaje = registrar_devolucion(id_prestamo, "INVALIDO", ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "Estado físico inválido"
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "ACTIVO"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
+
+
+def test_no_activa_interbibliotecario_con_dias_invalidos():
+    from datos.prestamos import activar_prestamo_interbibliotecario
+
+    ok, mensaje = activar_prestamo_interbibliotecario(
+        999, 0, ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La cantidad de días debe ser mayor a cero"
 
 
 def test_reserva_marca_el_ejemplar_como_reservado():

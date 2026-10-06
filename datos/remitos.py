@@ -53,6 +53,14 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         conexion.close()
         return False, "Ya existe un remito con ese número"
 
+    cursor.execute("""
+        SELECT id FROM remitos
+        WHERE prestamo_id = ? AND sede_origen_id = ? AND sede_destino_id = ?
+    """, (id_prestamo, prestamo[1], prestamo[2]))
+    if cursor.fetchone() is not None:
+        conexion.close()
+        return False, "El préstamo ya tiene un remito de ida"
+
     ahora = datetime.now().isoformat(timespec="seconds")
 
     try:
@@ -85,13 +93,114 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         raise
 
 
+def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT ejemplar_id, sede_origen_id, sede_destino_id, estado
+        FROM prestamos
+        WHERE id = ?
+    """, (id_prestamo,))
+    prestamo = cursor.fetchone()
+    if prestamo is None:
+        conexion.close()
+        return False, "Préstamo inexistente"
+    if prestamo[3] != "DEVUELTO":
+        conexion.close()
+        return False, "El préstamo todavía no fue devuelto"
+    if prestamo[1] == prestamo[2]:
+        conexion.close()
+        return False, "El préstamo es local y no necesita remito de retorno"
+
+    id_sede_origen = prestamo[2]
+    id_sede_destino = prestamo[1]
+
+    cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_origen,))
+    origen = cursor.fetchone()
+    cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_destino,))
+    destino = cursor.fetchone()
+    if origen is None or origen[0] == 0:
+        conexion.close()
+        return False, "La sede origen está dada de baja"
+    if destino is None or destino[0] == 0:
+        conexion.close()
+        return False, "La sede destino está dada de baja"
+
+    cursor.execute("SELECT id FROM remitos WHERE numero = ?", (numero,))
+    if cursor.fetchone() is not None:
+        conexion.close()
+        return False, "Ya existe un remito con ese número"
+
+    cursor.execute("""
+        SELECT id FROM remitos
+        WHERE prestamo_id = ? AND sede_origen_id = ? AND sede_destino_id = ?
+    """, (id_prestamo, id_sede_origen, id_sede_destino))
+    if cursor.fetchone() is not None:
+        conexion.close()
+        return False, "El préstamo ya tiene un remito de retorno"
+
+    cursor.execute("""
+        SELECT estado, sede_pertenencia_id, sede_actual_id
+        FROM ejemplares
+        WHERE id = ?
+    """, (prestamo[0],))
+    ejemplar = cursor.fetchone()
+    if ejemplar is None:
+        conexion.close()
+        return False, "Ejemplar inexistente"
+    if ejemplar[0] != "DISPONIBLE" or ejemplar[2] != id_sede_origen:
+        conexion.close()
+        return False, "El ejemplar no está disponible en la sede de devolución"
+    if ejemplar[1] != id_sede_destino:
+        conexion.close()
+        return False, "La sede de retorno no coincide con la sede de pertenencia"
+
+    ahora = datetime.now().isoformat(timespec="seconds")
+
+    try:
+        cursor.execute("""
+            INSERT INTO remitos (
+                numero, prestamo_id, sede_origen_id, sede_destino_id,
+                fecha_creacion, fecha_despacho, fecha_recepcion, estado
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (numero, id_prestamo, id_sede_origen, id_sede_destino,
+              ahora, None, None, "PREPARADO"))
+        id_remito = cursor.lastrowid
+
+        cursor.execute("""
+            INSERT INTO remito_ejemplares (remito_id, ejemplar_id)
+            VALUES (?, ?)
+        """, (id_remito, prestamo[0]))
+
+        cursor.execute("""
+            INSERT INTO historial_remito (remito_id, estado, fecha_hora)
+            VALUES (?, ?, ?)
+        """, (id_remito, "PREPARADO", ahora))
+
+        cursor.execute("""
+            UPDATE ejemplares
+            SET estado = 'RESERVADO'
+            WHERE id = ?
+        """, (prestamo[0],))
+
+        conexion.commit()
+        conexion.close()
+        return True, id_remito
+    except Exception:
+        conexion.rollback()
+        conexion.close()
+        raise
+
+
 def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
                             nombre_archivo=ARCHIVO_BD):
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT id, numero, sede_origen_id, sede_destino_id,
+        SELECT id, numero, prestamo_id, sede_origen_id, sede_destino_id,
                fecha_creacion, fecha_despacho, fecha_recepcion, estado
         FROM remitos
         WHERE id = ?
@@ -102,11 +211,11 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
         return False, "Remito inexistente"
 
     remito = Remito(
-        fila[1], fila[2], fila[3],
-        fecha_creacion=fila[4],
-        fecha_despacho=fila[5],
-        fecha_recepcion=fila[6],
-        estado=fila[7], id=fila[0]
+        fila[1], fila[3], fila[4],
+        fecha_creacion=fila[5],
+        fecha_despacho=fila[6],
+        fecha_recepcion=fila[7],
+        estado=fila[8], id=fila[0]
     )
 
     if observadores is not None:
@@ -120,8 +229,8 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
     ahora = datetime.now().isoformat(timespec="seconds")
 
     try:
-        fecha_despacho = fila[5]
-        fecha_recepcion = fila[6]
+        fecha_despacho = fila[6]
+        fecha_recepcion = fila[7]
         if nuevo_estado == "DESPACHADO":
             fecha_despacho = ahora
         elif nuevo_estado == "RECIBIDO":
@@ -150,14 +259,27 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
             """, (id_remito,))
         elif nuevo_estado == "RECIBIDO":
             cursor.execute("""
+                SELECT sede_origen_id, sede_destino_id
+                FROM prestamos
+                WHERE id = ?
+            """, (fila[2],))
+            prestamo = cursor.fetchone()
+            es_retorno = (
+                prestamo is not None
+                and fila[3] == prestamo[1]
+                and fila[4] == prestamo[0]
+            )
+            estado_ejemplar = "DISPONIBLE" if es_retorno else "RESERVADO"
+
+            cursor.execute("""
                 UPDATE ejemplares
-                SET estado = 'RESERVADO', sede_actual_id = ?
+                SET estado = ?, sede_actual_id = ?
                 WHERE id IN (
                     SELECT ejemplar_id
                     FROM remito_ejemplares
                     WHERE remito_id = ?
                 )
-            """, (fila[3], id_remito))
+            """, (estado_ejemplar, fila[4], id_remito))
 
         conexion.commit()
         conexion.close()

@@ -11,6 +11,7 @@ from datos.libros import listar_libros, agregar_libro, modificar_libro
 from datos.ejemplares import listar_ejemplares, agregar_ejemplar, cambiar_estado_ejemplar
 from datos.prestamos import (
     listar_prestamos,
+    listar_prestamos_pendientes_retorno,
     registrar_prestamo_local,
     solicitar_prestamo_interbibliotecario,
     activar_prestamo_interbibliotecario,
@@ -702,19 +703,9 @@ class BibliotecaApp(tk.Tk):
             f"{p[0]} - {p[2]} / {p[3]} / {p[5]} -> {p[6]}" for p in solicitudes
         ]
 
-        devoluciones_inter = []
-        for p in prestamos:
-            if p[-1] != "DEVUELTO" or p[5] == p[6]:
-                continue
-            tiene_retorno = any(
-                r[2] == p[0] and r[3] == p[6] and r[4] == p[5]
-                for r in remitos
-            )
-            if not tiene_retorno:
-                devoluciones_inter.append(p)
-
+        devoluciones_inter = listar_prestamos_pendientes_retorno()
         self.combo_remito_retorno["values"] = [
-            f"{p[0]} - {p[2]} / {p[3]} / {p[6]} -> {p[5]}"
+            f"{p[0]} - {p[1]} / {p[2]} / {p[4]} -> {p[3]}"
             for p in devoluciones_inter
         ]
 

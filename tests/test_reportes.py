@@ -1,6 +1,6 @@
 import os
 
-from datos.base_datos import crear_tablas
+from datos.base_datos import crear_tablas, conectar
 from datos.sedes import agregar_sede
 from datos.socios import agregar_socio
 from datos.libros import agregar_libro
@@ -11,7 +11,8 @@ from datos.reportes import (
     prestamos_activos_y_material_en_transito,
     libros_mas_solicitados_interbibliotecarios,
     disponibilidad_catalogo_por_sede,
-    movimientos_y_tiempo_promedio_transito
+    movimientos_y_tiempo_promedio_transito,
+    prestamos_vencidos
 )
 from modelos.sede import Sede
 from modelos.socio import Socio
@@ -98,3 +99,24 @@ def test_reporte_movimientos_y_promedio_transito():
     assert reporte["movimientos"][0][1] == "Norte"
     assert reporte["movimientos"][0][2] == 1
     assert reporte["horas_promedio_transito"] >= 0
+
+
+def test_reporte_prestamos_vencidos():
+    centro, _, socio, ejemplar1, _ = crear_base()
+    ok, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar1.id, centro.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+
+    conexion = conectar(ARCHIVO_TEST)
+    conexion.execute("""
+        UPDATE prestamos
+        SET fecha_vencimiento = '2020-01-01'
+        WHERE id = ?
+    """, (id_prestamo,))
+    conexion.commit()
+    conexion.close()
+
+    reporte = prestamos_vencidos(ARCHIVO_TEST)
+    assert len(reporte) == 1
+    assert reporte[0][0] == id_prestamo
+    assert reporte[0][3] == "Uno"

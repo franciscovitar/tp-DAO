@@ -17,26 +17,28 @@ Actualizada: 2026-10-06
 
 - No prestar ejemplares no disponibles: cubierta.
 - No prestar a socios inhabilitados: cubierta.
-- Controlar vencimientos: se guarda la fecha y Prestamo puede informar si está vencido.
-- Mantener trazabilidad: cubierta con historial append-only.
+- Controlar vencimientos: se guarda la fecha de vencimiento y existe un reporte de préstamos activos vencidos.
+- Mantener trazabilidad: cubierta con historial append-only registrado por Observer.
 - Evitar duplicados de socios, catálogo y ejemplares: cubierta.
 - No prestar ejemplares que no pertenezcan a la sede origen: cubierta.
 - No iniciar operaciones hacia o desde sedes de baja: cubierta.
 
 ## Patrones
 
-- Observer: cambios del Remito.
-- Singleton: acceso a SQLite.
+- Observer: Remito es el Subject y HistorialRemitoObserver registra cada transición.
+- Singleton: DatabaseSingleton centraliza el acceso a SQLite.
 
 Factory queda fuera porque no resuelve una necesidad actual.
 
 ## Reportes
 
-Cubiertos los cuatro reportes mínimos:
+Los cuatro mínimos están cubiertos:
 1. préstamos activos y material en tránsito;
 2. libros más solicitados entre sedes;
 3. disponibilidad por sede;
 4. movimientos entre sedes y tiempo promedio de tránsito.
+
+Se agrega un quinto reporte: préstamos vencidos. No se calculan multas porque la consigna no define monto ni regla de cálculo.
 
 ## Regla definida por el grupo: retorno
 
@@ -56,5 +58,5 @@ La interfaz permite seleccionar los préstamos interbibliotecarios ya devueltos 
 - ejecutar la interfaz visualmente de punta a punta;
 - reejecutar toda la suite después de los últimos cambios;
 - revisar casos límite finales;
-- actualizar DER/UML final;
+- actualizar DER/UML y casos de uso finales;
 - preparar defensa.

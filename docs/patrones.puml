@@ -1,0 +1,50 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package Observer {
+  class Subject {
+    - _observers
+    + attach(observer)
+    + detach(observer)
+    + notify()
+  }
+
+  abstract class Observer {
+    {abstract} + update(subject)
+  }
+
+  class Remito {
+    estado
+    + cambiar_estado(nuevo_estado)
+  }
+
+  class HistorialRemitoObserver {
+    - cursor
+    + update(subject)
+  }
+
+  Subject <|-- Remito
+  Observer <|-- HistorialRemitoObserver
+  Remito o-- Observer : notifica >
+}
+
+package Singleton {
+  class DatabaseSingleton {
+    {static} - _instance
+    - connection
+    - nombre_archivo
+    + __new__(nombre_archivo)
+    + obtener_conexion()
+    + close_connection()
+  }
+}
+
+note bottom of HistorialRemitoObserver
+  Agrega una fila a historial_remito
+  cuando cambia el estado del Remito.
+end note
+
+note bottom of DatabaseSingleton
+  Centraliza el acceso a SQLite.
+end note
+@enduml

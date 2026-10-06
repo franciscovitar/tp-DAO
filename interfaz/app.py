@@ -29,6 +29,7 @@ from datos.reportes import (
     libros_mas_solicitados_interbibliotecarios,
     disponibilidad_catalogo_por_sede,
     movimientos_y_tiempo_promedio_transito,
+    prestamos_vencidos,
 )
 
 
@@ -569,6 +570,7 @@ class BibliotecaApp(tk.Tk):
                 "Libros más solicitados entre sedes",
                 "Disponibilidad de catálogo por sede",
                 "Movimientos y tiempo promedio de tránsito",
+                "Préstamos vencidos",
             ),
         )
         self.combo_reporte.current(0)
@@ -609,10 +611,17 @@ class BibliotecaApp(tk.Tk):
         elif opcion == 2:
             datos = disponibilidad_catalogo_por_sede()
             self.mostrar_reporte(("sede", "isbn", "titulo", "cantidad"), ("Sede", "ISBN", "Libro", "Disponibles"), datos)
-        else:
+        elif opcion == 3:
             datos = movimientos_y_tiempo_promedio_transito()
             self.mostrar_reporte(("origen", "destino", "cantidad"), ("Origen", "Destino", "Envíos"), datos["movimientos"])
             self.lbl_reporte.config(text=f"Promedio de tránsito: {datos['horas_promedio_transito']:.2f} h")
+        else:
+            datos = prestamos_vencidos()
+            self.mostrar_reporte(
+                ("id", "dni", "socio", "libro", "ejemplar", "vencimiento"),
+                ("ID", "DNI", "Socio", "Libro", "Ejemplar", "Vencimiento"),
+                datos,
+            )
 
     def refrescar_todo(self):
         sedes = listar_sedes()

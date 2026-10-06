@@ -1,0 +1,41 @@
+@startuml
+left to right direction
+
+actor "Personal de biblioteca" as Personal
+actor Socio
+
+rectangle "Sistema de Préstamos Interbibliotecarios" {
+  usecase "Administrar sedes" as UC1
+  usecase "Administrar socios" as UC2
+  usecase "Administrar catálogo\ny ejemplares" as UC3
+  usecase "Consultar disponibilidad" as UC4
+  usecase "Registrar préstamo local" as UC5
+  usecase "Registrar solicitud\ninterbibliotecaria" as UC6
+  usecase "Gestionar reservas" as UC7
+  usecase "Preparar remito" as UC8
+  usecase "Despachar remito" as UC9
+  usecase "Recibir remito" as UC10
+  usecase "Registrar devolución" as UC11
+  usecase "Generar remito de retorno" as UC12
+  usecase "Consultar reportes" as UC13
+}
+
+Personal --> UC1
+Personal --> UC2
+Personal --> UC3
+Personal --> UC4
+Personal --> UC5
+Personal --> UC6
+Personal --> UC7
+Personal --> UC8
+Personal --> UC9
+Personal --> UC10
+Personal --> UC11
+Personal --> UC12
+Personal --> UC13
+
+Socio --> UC4
+
+UC6 .> UC8 : habilita
+UC11 .> UC12 : si es interbibliotecario
+@enduml

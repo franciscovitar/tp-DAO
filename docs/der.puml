@@ -1,0 +1,118 @@
+@startuml
+hide methods
+hide stereotypes
+
+entity sedes {
+  * id : INTEGER <<PK>>
+  --
+  nombre : TEXT
+  direccion : TEXT
+  telefono : TEXT
+  email : TEXT
+  horario : TEXT
+  activa : INTEGER
+}
+
+entity socios {
+  * id : INTEGER <<PK>>
+  --
+  dni : TEXT <<UQ>>
+  nombre : TEXT
+  apellido : TEXT
+  telefono : TEXT
+  email : TEXT
+  habilitado : INTEGER
+}
+
+entity libros {
+  * id : INTEGER <<PK>>
+  --
+  isbn : TEXT <<UQ>>
+  titulo : TEXT
+  autor : TEXT
+  editorial : TEXT
+  anio : INTEGER
+}
+
+entity ejemplares {
+  * id : INTEGER <<PK>>
+  --
+  codigo : TEXT <<UQ>>
+  libro_id : INTEGER <<FK>>
+  sede_pertenencia_id : INTEGER <<FK>>
+  sede_actual_id : INTEGER <<FK>>
+  estado : TEXT
+  estado_fisico : TEXT
+}
+
+entity prestamos {
+  * id : INTEGER <<PK>>
+  --
+  socio_id : INTEGER <<FK>>
+  ejemplar_id : INTEGER <<FK>>
+  sede_origen_id : INTEGER <<FK>>
+  sede_destino_id : INTEGER <<FK>>
+  fecha_solicitud : TEXT
+  fecha_inicio : TEXT
+  fecha_vencimiento : TEXT
+  fecha_devolucion : TEXT
+  estado : TEXT
+}
+
+entity reservas {
+  * id : INTEGER <<PK>>
+  --
+  socio_id : INTEGER <<FK>>
+  ejemplar_id : INTEGER <<FK>>
+  sede_id : INTEGER <<FK>>
+  fecha : TEXT
+  estado : TEXT
+}
+
+entity remitos {
+  * id : INTEGER <<PK>>
+  --
+  numero : TEXT <<UQ>>
+  prestamo_id : INTEGER <<FK>>
+  sede_origen_id : INTEGER <<FK>>
+  sede_destino_id : INTEGER <<FK>>
+  fecha_creacion : TEXT
+  fecha_despacho : TEXT
+  fecha_recepcion : TEXT
+  estado : TEXT
+}
+
+entity remito_ejemplares {
+  * remito_id : INTEGER <<PK, FK>>
+  * ejemplar_id : INTEGER <<PK, FK>>
+}
+
+entity historial_remito {
+  * id : INTEGER <<PK>>
+  --
+  remito_id : INTEGER <<FK>>
+  estado : TEXT
+  fecha_hora : TEXT
+}
+
+libros ||--o{ ejemplares
+sedes ||--o{ ejemplares : pertenencia
+sedes ||--o{ ejemplares : actual
+
+socios ||--o{ prestamos
+ejemplares ||--o{ prestamos
+sedes ||--o{ prestamos : origen
+sedes ||--o{ prestamos : destino
+
+socios ||--o{ reservas
+ejemplares ||--o{ reservas
+sedes ||--o{ reservas
+
+prestamos ||--o{ remitos
+sedes ||--o{ remitos : origen
+sedes ||--o{ remitos : destino
+
+remitos ||--|{ remito_ejemplares
+ejemplares ||--o{ remito_ejemplares
+remitos ||--|{ historial_remito
+@enduml

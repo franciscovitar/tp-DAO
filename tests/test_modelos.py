@@ -37,3 +37,16 @@ def test_prestamo_vencido_se_calcula_por_fecha():
                         date.today() - timedelta(days=6))
 
     assert prestamo.esta_vencido()
+
+
+def test_reserva_nueva_esta_activa():
+    from datetime import date
+    from modelos.reserva import Reserva
+
+    sede = Sede("Centro", "Colon 100", "111", "centro@mail.com", "8 a 20")
+    socio = Socio("40111222", "Ana", "Perez", "111", "ana@mail.com")
+    libro = Libro("9789500000001", "Uno", "Autor", "Editorial", 2020)
+    ejemplar = Ejemplar("EJ-001", libro, sede)
+    reserva = Reserva(socio, ejemplar, sede, date.today())
+
+    assert reserva.estado == "ACTIVA"

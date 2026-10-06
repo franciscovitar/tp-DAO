@@ -43,9 +43,22 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
     if ejemplar is None:
         conexion.close()
         return False, "Ejemplar inexistente"
-    if ejemplar[0] != "DISPONIBLE":
+
+    reserva_activa = None
+    if ejemplar[0] == "RESERVADO":
+        cursor.execute("""
+            SELECT id, socio_id
+            FROM reservas
+            WHERE ejemplar_id = ? AND estado = ?
+        """, (id_ejemplar, "ACTIVA"))
+        reserva_activa = cursor.fetchone()
+        if reserva_activa is None or reserva_activa[1] != id_socio:
+            conexion.close()
+            return False, "El ejemplar está reservado para otro socio"
+    elif ejemplar[0] != "DISPONIBLE":
         conexion.close()
         return False, "El ejemplar no está disponible"
+
     if ejemplar[1] != id_sede:
         conexion.close()
         return False, "El ejemplar no pertenece a la sede de origen"
@@ -74,6 +87,13 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
             SET estado = ?
             WHERE id = ?
         """, ("PRESTADO", id_ejemplar))
+
+        if reserva_activa is not None:
+            cursor.execute("""
+                UPDATE reservas
+                SET estado = ?
+                WHERE id = ?
+            """, ("CUMPLIDA", reserva_activa[0]))
 
         conexion.commit()
         conexion.close()

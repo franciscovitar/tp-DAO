@@ -166,3 +166,61 @@ def test_devolucion_cierra_prestamo_y_libera_ejemplar():
     guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
     assert guardado[5] == "DISPONIBLE"
     assert guardado[6] == "DANADO"
+
+
+def test_reserva_marca_el_ejemplar_como_reservado():
+    from datos.reservas import registrar_reserva, buscar_reserva
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_reserva = registrar_reserva(socio.id, ejemplar.id, sede.id,
+                                       ARCHIVO_TEST)
+
+    assert ok
+    assert buscar_reserva(id_reserva, ARCHIVO_TEST)[5] == "ACTIVA"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"
+
+
+def test_otro_socio_no_puede_prestar_un_ejemplar_reservado():
+    from datos.reservas import registrar_reserva
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    otro = Socio("40999888", "Juan", "Lopez", "222", "juan@mail.com")
+    agregar_socio(otro, ARCHIVO_TEST)
+    registrar_reserva(socio.id, ejemplar.id, sede.id, ARCHIVO_TEST)
+
+    ok, mensaje = registrar_prestamo_local(otro.id, ejemplar.id, sede.id,
+                                            nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "El ejemplar está reservado para otro socio"
+
+
+def test_socio_que_reservo_puede_concretar_el_prestamo():
+    from datos.reservas import registrar_reserva, buscar_reserva
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    _, id_reserva = registrar_reserva(socio.id, ejemplar.id, sede.id,
+                                      ARCHIVO_TEST)
+
+    ok, _ = registrar_prestamo_local(socio.id, ejemplar.id, sede.id,
+                                      nombre_archivo=ARCHIVO_TEST)
+
+    assert ok
+    assert buscar_reserva(id_reserva, ARCHIVO_TEST)[5] == "CUMPLIDA"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
+
+
+def test_cancelar_reserva_libera_el_ejemplar():
+    from datos.reservas import registrar_reserva, cancelar_reserva, buscar_reserva
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    _, id_reserva = registrar_reserva(socio.id, ejemplar.id, sede.id,
+                                      ARCHIVO_TEST)
+
+    ok, _ = cancelar_reserva(id_reserva, ARCHIVO_TEST)
+
+    assert ok
+    assert buscar_reserva(id_reserva, ARCHIVO_TEST)[5] == "CANCELADA"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"

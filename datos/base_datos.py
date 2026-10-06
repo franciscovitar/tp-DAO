@@ -82,5 +82,19 @@ def crear_tablas(nombre_archivo=ARCHIVO_BD):
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reservas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            socio_id INTEGER NOT NULL,
+            ejemplar_id INTEGER NOT NULL,
+            sede_id INTEGER NOT NULL,
+            fecha TEXT NOT NULL,
+            estado TEXT NOT NULL,
+            FOREIGN KEY (socio_id) REFERENCES socios(id),
+            FOREIGN KEY (ejemplar_id) REFERENCES ejemplares(id),
+            FOREIGN KEY (sede_id) REFERENCES sedes(id)
+        )
+    """)
+
     conexion.commit()
     conexion.close()

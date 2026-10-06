@@ -139,6 +139,18 @@ def test_registrar_prestamo_local_cambia_estado_del_ejemplar():
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 
+def test_no_registra_prestamo_con_dias_invalidos():
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    from datos.prestamos import registrar_prestamo_local
+
+    ok, mensaje = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, 0, ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La cantidad de días debe ser mayor a cero"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
+
+
 def test_no_presta_a_socio_inhabilitado():
     from datos.prestamos import registrar_prestamo_local
 

@@ -65,9 +65,10 @@ Con un ejemplar perteneciente a Centro y Norte como destino:
 9. comprobar que sede_actual ahora es Norte;
 10. activar el préstamo;
 11. registrar la devolución en Norte;
-12. crear remito de retorno;
-13. avanzar PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO;
-14. comprobar que sede_actual vuelve a Centro y el ejemplar queda DISPONIBLE.
+12. comprobar que el ejemplar queda PENDIENTE_RETORNO y que no aparece como disponible;
+13. crear remito de retorno;
+14. avanzar PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO;
+15. comprobar que sede_actual vuelve a Centro y el ejemplar queda DISPONIBLE.
 
 ## Reportes
 

@@ -37,19 +37,14 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 
 ## Verificación
 
-- El núcleo anterior tenía 26 tests registrados como aprobados.
-- La interfaz base fue validada por sintaxis y se verificó el import de tkinter.
-- El flujo de ida y retorno fue ejecutado localmente después de aplicar Observer al historial y pasó.
-- La consulta SQL del reporte de vencidos fue ejecutada localmente y pasó.
-- La activación/desactivación de ejemplares y el bloqueo durante un préstamo fueron verificados con una prueba dirigida local.
-- El flujo interbibliotecario con PENDIENTE_RETORNO, exclusión del reporte de disponibilidad y regreso a la sede de pertenencia fue ejecutado de punta a punta en una prueba dirigida local.
-- La suite actual contiene 35 tests.
-- Las nuevas guardas de duración, estado físico y número de remito fueron revisadas con pruebas específicas; falta ejecutar la regresión completa de los 35 tests sobre el main actual.
-- Falta una ejecución visual completa de la interfaz.
+- Regresión completa ejecutada sobre el código funcional de main: **36 tests aprobados en 0.65 s**.
+- Verificación realizada en GitHub Actions, run `37543370547`.
+- Smoke funcional de la interfaz ejecutado bajo Xvfb y finalizado con `GUI_SMOKE_OK`.
+- El smoke recorrió las 7 pestañas y ejercitó: altas de sedes/socio/libro/ejemplares, reserva y cancelación, préstamo local y devolución, solicitud interbibliotecaria, remito de ida completo, activación y devolución, remito de retorno completo y generación de los 5 reportes.
+- Se comprobó al final que el ejemplar interbibliotecario vuelve a su sede de pertenencia en estado DISPONIBLE y que el historial del remito conserva PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO.
+- La captura de apertura de la GUI mostró un recorte en los botones de Sedes; se ajustó el layout de acciones de Sedes y Socios a una segunda fila. El cambio es solamente de disposición visual y no modifica reglas de negocio.
 
 ## Pendiente inmediato
 
-1. Ejecutar la interfaz visualmente de punta a punta.
-2. Reejecutar regresión completa.
-3. Revisar casos límite finales.
-4. Preparar defensa.
+1. Revisión estética rápida en el escritorio donde se vaya a presentar.
+2. Practicar la defensa oral.

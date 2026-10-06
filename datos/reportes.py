@@ -94,3 +94,22 @@ def movimientos_y_tiempo_promedio_transito(nombre_archivo=ARCHIVO_BD):
         "movimientos": movimientos,
         "horas_promedio_transito": 0 if promedio is None else promedio
     }
+
+
+def prestamos_vencidos(nombre_archivo=ARCHIVO_BD):
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT p.id, s.dni, s.nombre || ' ' || s.apellido,
+               l.titulo, e.codigo, p.fecha_vencimiento
+        FROM prestamos p
+        JOIN socios s ON s.id = p.socio_id
+        JOIN ejemplares e ON e.id = p.ejemplar_id
+        JOIN libros l ON l.id = e.libro_id
+        WHERE p.estado = 'ACTIVO'
+          AND date(p.fecha_vencimiento) < date('now')
+        ORDER BY p.fecha_vencimiento
+    """)
+    vencidos = cursor.fetchall()
+    conexion.close()
+    return vencidos

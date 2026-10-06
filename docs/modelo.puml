@@ -44,6 +44,7 @@ class Prestamo {
   fecha_vencimiento
   fecha_devolucion
   estado
+  + esta_vencido()
 }
 
 class Reserva {
@@ -59,6 +60,7 @@ class Remito {
   fecha_despacho
   fecha_recepcion
   estado
+  + cambiar_estado()
 }
 
 class HistorialRemito {
@@ -67,21 +69,34 @@ class HistorialRemito {
   fecha_hora
 }
 
-Sede "1" -- "0..*" Ejemplar : pertenece >
 Libro "1" -- "1..*" Ejemplar
+Sede "1" -- "0..*" Ejemplar : pertenencia
+Sede "1" -- "0..*" Ejemplar : ubicación actual
+
 Socio "1" -- "0..*" Prestamo
 Ejemplar "1" -- "0..*" Prestamo
-Socio "1" -- "0..*" Reserva
-Ejemplar "1" -- "0..*" Reserva
 Sede "1" -- "0..*" Prestamo : origen
 Sede "1" -- "0..*" Prestamo : destino
+
+Socio "1" -- "0..*" Reserva
+Ejemplar "1" -- "0..*" Reserva
+Sede "1" -- "0..*" Reserva
+
+Prestamo "1" -- "0..2" Remito : ida / retorno
 Sede "1" -- "0..*" Remito : origen
 Sede "1" -- "0..*" Remito : destino
-Remito "1" o-- "1..*" Ejemplar
+Remito "0..*" -- "1..*" Ejemplar
 Remito "1" *-- "1..*" HistorialRemito
 
 note right of Ejemplar
-  sede_pertenencia
-  sede_actual
+  sede_pertenencia = propietario
+  sede_actual = ubicación física
+end note
+
+note right of Remito
+  PREPARADO
+  DESPACHADO
+  EN_TRANSITO
+  RECIBIDO
 end note
 @enduml

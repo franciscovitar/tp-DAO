@@ -17,12 +17,12 @@ Incluye ida, trazabilidad, recepción, préstamo y retorno del ejemplar a su sed
 ## Etapa 5 - Patrones
 Estado: terminada.
 
-Observer + Singleton implementados.
+Observer + Singleton implementados y utilizados por la aplicación.
 
 ## Etapa 6 - Reportes
 Estado: terminada.
 
-Cuatro reportes no triviales implementados.
+Los cuatro reportes obligatorios están implementados. Además se agregó préstamos vencidos para hacer visible el control de fechas de vencimiento.
 
 ## Etapa 7 - Interfaz
 Estado: primera versión funcional implementada.
@@ -36,12 +36,17 @@ Pendiente:
 ## Etapa 8 - Pruebas finales
 Estado: en curso.
 
-El flujo de retorno fue verificado localmente. Falta regresión completa del repositorio después de la interfaz final.
+El flujo de ida/retorno y la consulta de vencidos se verificaron de forma dirigida. Falta regresión completa del repositorio después de los últimos cambios.
 
-## Etapa 9 - Auditoría de consigna
-Estado: primera auditoría realizada.
+## Etapa 9 - Auditoría y documentación
+Estado: avanzada.
 
-Ver docs/auditoria-consigna.md.
+Disponibles:
+- auditoría de consigna;
+- UML del dominio;
+- DER;
+- casos de uso;
+- diagrama de patrones.
 
 ## Etapa 10 - Defensa
 Estado: pendiente.

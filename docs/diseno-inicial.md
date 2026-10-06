@@ -59,6 +59,9 @@ El remito sólo avanza en ese orden. Cada cambio agrega un registro en historial
 5. El remito pasa por EN_TRANSITO.
 6. Al RECIBIR, se actualiza sede_actual y el ejemplar queda RESERVADO para el socio.
 7. Recién entonces se activa el préstamo y el ejemplar pasa a PRESTADO.
+8. Cuando el socio devuelve el material, el préstamo queda DEVUELTO.
+9. Si el ejemplar pertenece a otra sede, se genera un remito de retorno.
+10. Al recibir el retorno, sede_actual vuelve a sede_pertenencia y el ejemplar queda DISPONIBLE.
 
 ## Persistencia
 
@@ -85,13 +88,13 @@ El material 2026 recibido de la cátedra enseña Singleton, Factory y Observer.
 
 Remito funciona como Subject. Los observadores se registran con attach() y reciben update() cuando el remito cambia correctamente de estado.
 
-Se usa para monitoreo de cambios, exactamente uno de los casos de uso mostrados por la cátedra. HistorialRemitoObserver es el observador concreto utilizado por la aplicación: cuando recibe una actualización agrega el nuevo estado a historial_remito usando la misma transacción de la operación.
+HistorialRemitoObserver es el observador concreto utilizado por la aplicación: cuando recibe una actualización agrega el nuevo estado a historial_remito usando la misma transacción de la operación.
 
-Así el patrón no queda solamente definido: participa en la trazabilidad real del remito.
+Así el patrón participa en una necesidad real del sistema: la trazabilidad del remito.
 
-### Singleton - elegido
+### Singleton - elegido e implementado
 
-Se aplica al acceso a SQLite siguiendo el ejemplo DatabaseSingleton entregado por la cátedra.
+DatabaseSingleton centraliza el acceso a SQLite siguiendo el ejemplo de Singleton de base de datos entregado por la cátedra.
 
 ### Factory - alternativa
 
@@ -101,12 +104,15 @@ Factory está enseñado, pero no se agrega si no aparece una necesidad real de c
 
 No se usa State porque no aparece entre los patrones enseñados en el material 2026 recibido. El control de transiciones del remito se resuelve con lógica simple del propio Remito.
 
-## Reportes elegidos
+## Reportes
 
 1. Préstamos activos y material en tránsito.
 2. Libros más solicitados entre sedes.
 3. Disponibilidad de catálogo por sede.
 4. Movimientos entre sedes y tiempo promedio de tránsito.
+5. Préstamos vencidos.
+
+Los primeros cuatro cubren el mínimo obligatorio. El quinto hace visible el control de vencimientos.
 
 No se define una regla de multas porque la consigna no indica cómo calcular su monto.
 
@@ -122,10 +128,4 @@ docs/
 main.py
 ```
 
-La interfaz se agrega cuando el modelo y la persistencia estén estables. Las reglas importantes no deben depender únicamente de la pantalla.
-
-## Punto abierto
-
-La consigna no define qué ocurre después de devolver en la sede destino un ejemplar interbibliotecario.
-
-Propuesta pendiente de validación: devolverlo a su sede de pertenencia mediante otro remito.
+Las reglas importantes permanecen fuera de la interfaz. La pantalla valida datos de entrada y llama a la lógica ya implementada.

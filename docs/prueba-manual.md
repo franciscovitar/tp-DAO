@@ -30,6 +30,9 @@ Usar esta guía antes de la entrega y la defensa.
 - Crear un ejemplar en Sede Centro.
 - Intentar repetir su código.
 - Verificar que figura DISPONIBLE y con Centro como sede de pertenencia y sede actual.
+- Desactivar el ejemplar y verificar que queda BAJA.
+- Reactivarlo y verificar que vuelve a DISPONIBLE.
+- Con un ejemplar prestado, comprobar que la interfaz no permite desactivarlo.
 
 ## Préstamo local
 

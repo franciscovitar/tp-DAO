@@ -6,7 +6,7 @@ Actualizada: 2026-10-06
 
 1. Administrar sedes: cubierto con alta, modificación y activo/baja.
 2. Administrar socios: cubierto con alta, modificación y habilitación/inhabilitación.
-3. Administrar catálogo y ejemplares: cubierto con libros, ejemplares, sede de pertenencia y sede actual.
+3. Administrar catálogo y ejemplares: cubierto con alta/modificación de libros, alta de ejemplares, consulta de sede de pertenencia/actual y activación/desactivación de ejemplares.
 4. Préstamos locales e interbibliotecarios: cubierto.
 5. Empaquetar, despachar y recibir con remito y trazabilidad: cubierto con PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO.
 6. Consultar disponibilidad: cubierto por estado de ejemplares y reporte por sede.
@@ -15,7 +15,7 @@ Actualizada: 2026-10-06
 
 ## Validaciones
 
-- No prestar ejemplares no disponibles: cubierta.
+- No prestar ejemplares no disponibles: cubierta. Un ejemplar desactivado queda en estado BAJA y tampoco puede prestarse ni reservarse.
 - No prestar a socios inhabilitados: cubierta.
 - Controlar vencimientos: se guarda la fecha de vencimiento y existe un reporte de préstamos activos vencidos.
 - Mantener trazabilidad: cubierta con historial append-only registrado por Observer.

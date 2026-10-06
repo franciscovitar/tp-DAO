@@ -4,7 +4,7 @@ from datos.base_datos import crear_tablas
 from datos.sedes import agregar_sede, buscar_sede, modificar_sede, cambiar_estado_sede
 from datos.socios import agregar_socio, buscar_socio_por_dni, cambiar_habilitacion_socio
 from datos.libros import agregar_libro, buscar_libro_por_isbn
-from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo, listar_ejemplares
+from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo, listar_ejemplares, cambiar_estado_ejemplar
 from modelos.sede import Sede
 from modelos.socio import Socio
 from modelos.libro import Libro
@@ -81,6 +81,35 @@ def test_alta_de_ejemplar_y_control_de_codigo_duplicado():
     listado = listar_ejemplares(ARCHIVO_TEST)
     assert len(listado) == 1
     assert listado[0][2] == "Uno"
+
+
+def test_ejemplar_disponible_puede_activarse_y_desactivarse():
+    sede = Sede("Centro", "Colon 100", "111", "centro@mail.com", "8 a 20")
+    agregar_sede(sede, ARCHIVO_TEST)
+
+    libro = Libro("9789500000001", "Uno", "Autor A", "Editorial", 2020)
+    agregar_libro(libro, ARCHIVO_TEST)
+
+    ejemplar = Ejemplar("EJ-001", libro, sede)
+    agregar_ejemplar(ejemplar, ARCHIVO_TEST)
+
+    assert cambiar_estado_ejemplar(ejemplar.id, "BAJA", ARCHIVO_TEST)
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "BAJA"
+
+    assert cambiar_estado_ejemplar(ejemplar.id, "DISPONIBLE", ARCHIVO_TEST)
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
+
+
+def test_no_desactiva_un_ejemplar_prestado():
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    from datos.prestamos import registrar_prestamo_local
+
+    ok, _ = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+
+    assert not cambiar_estado_ejemplar(ejemplar.id, "BAJA", ARCHIVO_TEST)
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 
 def crear_datos_para_prestamo():

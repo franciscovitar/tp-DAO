@@ -25,7 +25,8 @@ Actualizado: 2026-10-06
 - Observer para cambios del Remito.
 - DatabaseSingleton para SQLite.
 - Cuatro reportes no triviales obligatorios más un reporte de préstamos vencidos.
-- Interfaz gráfica para sedes, socios, catálogo, préstamos, reservas, remitos, retorno y reportes.
+- Interfaz gráfica para sedes, socios, catálogo, ejemplares, préstamos, reservas, remitos, retorno y reportes.
+- Activación/desactivación administrativa de ejemplares, bloqueada mientras estén reservados, prestados o en tránsito.
 
 ## Regla de retorno adoptada
 
@@ -39,6 +40,7 @@ Esta regla completa un punto que la consigna deja abierto y se documenta como de
 - La interfaz base fue validada por sintaxis y se verificó el import de tkinter.
 - El flujo de ida y retorno fue ejecutado localmente después de aplicar Observer al historial y pasó.
 - La consulta SQL del reporte de vencidos fue ejecutada localmente y pasó.
+- La activación/desactivación de ejemplares y el bloqueo durante un préstamo fueron verificados con una prueba dirigida local.
 - Falta una ejecución visual completa de la interfaz y una regresión completa de toda la suite después de los últimos cambios.
 
 ## Pendiente inmediato

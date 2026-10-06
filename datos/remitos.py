@@ -150,9 +150,9 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     if ejemplar is None:
         conexion.close()
         return False, "Ejemplar inexistente"
-    if ejemplar[0] != "DISPONIBLE" or ejemplar[2] != id_sede_origen:
+    if ejemplar[0] != "PENDIENTE_RETORNO" or ejemplar[2] != id_sede_origen:
         conexion.close()
-        return False, "El ejemplar no está disponible en la sede de devolución"
+        return False, "El ejemplar no está pendiente de retorno en la sede de devolución"
     if ejemplar[1] != id_sede_destino:
         conexion.close()
         return False, "La sede de retorno no coincide con la sede de pertenencia"
@@ -179,12 +179,6 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
             INSERT INTO historial_remito (remito_id, estado, fecha_hora)
             VALUES (?, ?, ?)
         """, (id_remito, "PREPARADO", ahora))
-
-        cursor.execute("""
-            UPDATE ejemplares
-            SET estado = 'RESERVADO'
-            WHERE id = ?
-        """, (prestamo[0],))
 
         conexion.commit()
         conexion.close()

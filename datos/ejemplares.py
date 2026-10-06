@@ -53,8 +53,22 @@ def listar_ejemplares(nombre_archivo=ARCHIVO_BD):
 
 
 def cambiar_estado_ejemplar(id_ejemplar, estado, nombre_archivo=ARCHIVO_BD):
+    if estado not in ("DISPONIBLE", "BAJA"):
+        return False
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT estado
+        FROM ejemplares
+        WHERE id = ?
+    """, (id_ejemplar,))
+    ejemplar = cursor.fetchone()
+
+    if ejemplar is None or ejemplar[0] not in ("DISPONIBLE", "BAJA"):
+        conexion.close()
+        return False
+
     cursor.execute("""
         UPDATE ejemplares
         SET estado = ?

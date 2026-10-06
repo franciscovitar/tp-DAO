@@ -102,7 +102,7 @@ Porque la consigna pide trazabilidad. Cada transición agrega un registro nuevo 
 
 ### ¿Qué pasa cuando se devuelve un ejemplar de otra sede?
 
-El préstamo se cierra y luego se prepara un remito de retorno. Durante ese traslado el ejemplar no está disponible. Al llegar a su sede de pertenencia vuelve a DISPONIBLE.
+El préstamo se cierra y el ejemplar queda PENDIENTE_RETORNO, por lo que no aparece como disponible en la sede donde fue devuelto. Después se prepara el remito de retorno; al despacharlo pasa a EN_TRANSITO y, cuando llega a su sede de pertenencia, vuelve a DISPONIBLE.
 
 ### ¿Dónde están las reglas de negocio?
 

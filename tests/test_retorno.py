@@ -118,6 +118,29 @@ def test_no_crea_dos_remitos_de_retorno_para_el_mismo_prestamo():
     assert mensaje == "El préstamo ya tiene un remito de retorno"
 
 
+def test_ejemplar_danado_vuelve_de_baja_a_su_sede():
+    origen, destino, socio, ejemplar = crear_datos()
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, ida = crear_remito(id_prestamo, "IDA-001", ARCHIVO_TEST)
+    avanzar_hasta_recibido(ida)
+    assert activar_prestamo_interbibliotecario(
+        id_prestamo, nombre_archivo=ARCHIVO_TEST)[0]
+    assert registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)[0]
+
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[5] == "PENDIENTE_RETORNO"
+    assert guardado[6] == "DANADO"
+
+    _, retorno = crear_remito_retorno(id_prestamo, "RET-001", ARCHIVO_TEST)
+    avanzar_hasta_recibido(retorno)
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[4] == origen.id
+    assert guardado[5] == "BAJA"
+    assert guardado[6] == "DANADO"
+    assert disponibilidad_catalogo_por_sede(ARCHIVO_TEST) == []
+
+
 def test_detecta_retorno_aunque_las_sedes_tengan_el_mismo_nombre():
     origen = Sede("Centro", "Colon 100", "111", "uno@mail.com", "8 a 20")
     destino = Sede("Centro", "Rivadavia 200", "222", "dos@mail.com", "8 a 20")

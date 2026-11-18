@@ -200,13 +200,32 @@ def test_devolucion_cierra_prestamo_y_libera_ejemplar():
                                                 nombre_archivo=ARCHIVO_TEST)
     assert ok
 
-    ok, _ = registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)
+    ok, _ = registrar_devolucion(id_prestamo, "BUENO", ARCHIVO_TEST)
 
     assert ok
     assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "DEVUELTO"
     guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
     assert guardado[5] == "DISPONIBLE"
+    assert guardado[6] == "BUENO"
+
+
+def test_devolucion_danada_deja_ejemplar_fuera_de_circulacion():
+    from datos.prestamos import registrar_prestamo_local, registrar_devolucion
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+
+    assert registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)[0]
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[5] == "BAJA"
     assert guardado[6] == "DANADO"
+
+    ok, mensaje = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert not ok
+    assert mensaje == "El ejemplar no está disponible"
 
 
 def test_devolucion_rechaza_estado_fisico_invalido():

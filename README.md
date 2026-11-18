@@ -10,6 +10,7 @@ Aplicación desarrollada en Python con SQLite y una interfaz gráfica en Tkinter
 - catálogo de libros y ejemplares físicos;
 - préstamos locales e interbibliotecarios;
 - reservas y devoluciones;
+- retiro de circulación de ejemplares devueltos dañados;
 - remitos de ida y retorno con trazabilidad;
 - consulta de disponibilidad;
 - cinco reportes de gestión;

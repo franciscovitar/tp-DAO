@@ -52,4 +52,4 @@ python main.py
 python -m pytest -q
 ```
 
-La suite actual contiene 36 pruebas automatizadas.
+La suite actual contiene 39 pruebas automatizadas.

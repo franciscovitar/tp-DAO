@@ -196,7 +196,7 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT ejemplar_id, sede_destino_id, estado
+        SELECT ejemplar_id, sede_destino_id, estado, socio_id
         FROM prestamos
         WHERE id = ?
     """, (id_prestamo,))
@@ -207,6 +207,15 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     if prestamo[2] != "SOLICITADO":
         conexion.close()
         return False, "La solicitud no está pendiente"
+
+    cursor.execute("SELECT habilitado FROM socios WHERE id = ?", (prestamo[3],))
+    socio = cursor.fetchone()
+    if socio is None:
+        conexion.close()
+        return False, "Socio inexistente"
+    if socio[0] == 0:
+        conexion.close()
+        return False, "El socio está inhabilitado"
 
     cursor.execute("""
         SELECT estado, sede_actual_id
@@ -264,11 +273,12 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
         return False, "El préstamo no está activo"
 
     hoy = date.today().isoformat()
-    estado_ejemplar = (
-        "PENDIENTE_RETORNO"
-        if prestamo[2] != prestamo[3]
-        else "DISPONIBLE"
-    )
+    if prestamo[2] != prestamo[3]:
+        estado_ejemplar = "PENDIENTE_RETORNO"
+    elif estado_fisico == "DANADO":
+        estado_ejemplar = "BAJA"
+    else:
+        estado_ejemplar = "DISPONIBLE"
 
     try:
         cursor.execute("""

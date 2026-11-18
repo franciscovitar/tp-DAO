@@ -271,13 +271,17 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
 
             cursor.execute("""
                 UPDATE ejemplares
-                SET estado = ?, sede_actual_id = ?
+                SET estado = CASE
+                    WHEN ? = 'DISPONIBLE' AND estado_fisico = 'DANADO'
+                    THEN 'BAJA'
+                    ELSE ?
+                END, sede_actual_id = ?
                 WHERE id IN (
                     SELECT ejemplar_id
                     FROM remito_ejemplares
                     WHERE remito_id = ?
                 )
-            """, (estado_ejemplar, fila[4], id_remito))
+            """, (estado_ejemplar, estado_ejemplar, fila[4], id_remito))
 
         conexion.commit()
         conexion.close()

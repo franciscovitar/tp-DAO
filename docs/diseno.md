@@ -12,6 +12,10 @@ El sistema distingue el catálogo de las copias físicas.
 - **Reserva:** reserva de un ejemplar para un socio.
 - **Remito:** traslado de un ejemplar entre sedes.
 
+El historial de cada remito se almacena en la tabla `historial_remito` mediante
+`HistorialRemitoObserver`. No se necesita una clase de dominio separada para
+representar cada registro de historial.
+
 Un Libro puede tener varios Ejemplares. La sede de pertenencia indica a qué biblioteca pertenece la copia; la sede actual indica dónde se encuentra físicamente en cada momento.
 
 ## Estados principales
@@ -68,7 +72,16 @@ Al registrarlo, el préstamo queda ACTIVO y el ejemplar pasa a PRESTADO.
 7. El préstamo se activa cuando el ejemplar ya está en la sede destino.
 8. Al devolverlo, el préstamo queda DEVUELTO y el ejemplar pasa a PENDIENTE_RETORNO.
 9. Se genera un remito de retorno hacia la sede de pertenencia.
-10. Cuando ese remito es recibido, el ejemplar vuelve a su sede de pertenencia y queda DISPONIBLE.
+10. Cuando ese remito es recibido, el ejemplar vuelve a su sede de pertenencia y queda DISPONIBLE si se devolvió en buen estado, o de BAJA si está dañado.
+
+Si una devolución registra el estado físico `DANADO`, el ejemplar no vuelve
+automáticamente a circulación: queda de `BAJA` al finalizar una devolución
+local o al recibirse el remito de retorno interbibliotecario. Puede ser
+reactivado posteriormente de forma explícita por el personal de biblioteca.
+
+Antes de activar un préstamo interbibliotecario se comprueba nuevamente que
+el socio siga habilitado, ya que su condición puede cambiar durante el
+traslado del ejemplar.
 
 ## Persistencia
 

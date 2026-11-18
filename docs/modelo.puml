@@ -63,12 +63,6 @@ class Remito {
   + cambiar_estado()
 }
 
-class HistorialRemito {
-  id
-  estado
-  fecha_hora
-}
-
 Libro "1" -- "1..*" Ejemplar
 Sede "1" -- "0..*" Ejemplar : pertenencia
 Sede "1" -- "0..*" Ejemplar : ubicación actual
@@ -86,7 +80,6 @@ Prestamo "1" -- "0..2" Remito : ida / retorno
 Sede "1" -- "0..*" Remito : origen
 Sede "1" -- "0..*" Remito : destino
 Remito "0..*" -- "1..*" Ejemplar
-Remito "1" *-- "1..*" HistorialRemito
 
 note right of Ejemplar
   sede_pertenencia = propietario
@@ -98,5 +91,9 @@ note right of Remito
   DESPACHADO
   EN_TRANSITO
   RECIBIDO
+
+  El historial se guarda en la tabla
+  historial_remito mediante
+  HistorialRemitoObserver.
 end note
 @enduml

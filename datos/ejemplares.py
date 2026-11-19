@@ -8,7 +8,7 @@ def buscar_ejemplar_por_codigo(codigo, nombre_archivo=ARCHIVO_BD):
         SELECT id, codigo, libro_id, sede_pertenencia_id, sede_actual_id,
                estado, estado_fisico
         FROM ejemplares
-        WHERE codigo = ?
+        WHERE codigo = ? COLLATE NOCASE
     """, (codigo,))
     ejemplar = cursor.fetchone()
     conexion.close()

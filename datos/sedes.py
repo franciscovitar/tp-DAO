@@ -1,7 +1,25 @@
 from datos.base_datos import conectar, ARCHIVO_BD
 
 
+def buscar_sede_duplicada(nombre, direccion, nombre_archivo=ARCHIVO_BD):
+    """Una sede se considera duplicada si coincide nombre y dirección (sin distinguir mayúsculas)."""
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT id, nombre, direccion, telefono, email, horario, activa
+        FROM sedes
+        WHERE nombre = ? COLLATE NOCASE AND direccion = ? COLLATE NOCASE
+    """, (nombre.strip(), direccion.strip()))
+    sede = cursor.fetchone()
+    conexion.close()
+    return sede
+
+
 def agregar_sede(sede, nombre_archivo=ARCHIVO_BD):
+    """Devuelve el id de la sede creada o None si ya existe una con el mismo nombre y dirección."""
+    if buscar_sede_duplicada(sede.nombre, sede.direccion, nombre_archivo) is not None:
+        return None
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""
@@ -42,6 +60,10 @@ def buscar_sede(id_sede, nombre_archivo=ARCHIVO_BD):
 
 
 def modificar_sede(sede, nombre_archivo=ARCHIVO_BD):
+    existente = buscar_sede_duplicada(sede.nombre, sede.direccion, nombre_archivo)
+    if existente is not None and existente[0] != sede.id:
+        return False
+
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""

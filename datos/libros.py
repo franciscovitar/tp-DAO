@@ -7,7 +7,7 @@ def buscar_libro_por_isbn(isbn, nombre_archivo=ARCHIVO_BD):
     cursor.execute("""
         SELECT id, isbn, titulo, autor, editorial, anio
         FROM libros
-        WHERE isbn = ?
+        WHERE isbn = ? COLLATE NOCASE
     """, (isbn,))
     libro = cursor.fetchone()
     conexion.close()

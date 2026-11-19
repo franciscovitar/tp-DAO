@@ -150,7 +150,7 @@ def test_no_registra_prestamo_con_dias_invalidos():
         socio.id, ejemplar.id, sede.id, 0, ARCHIVO_TEST)
 
     assert not ok
-    assert mensaje == "La cantidad de días debe ser mayor a cero"
+    assert mensaje == "La cantidad de días debe estar entre 1 y 60."
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
 
 
@@ -272,7 +272,7 @@ def test_no_activa_interbibliotecario_con_dias_invalidos():
         999, 0, ARCHIVO_TEST)
 
     assert not ok
-    assert mensaje == "La cantidad de días debe ser mayor a cero"
+    assert mensaje == "La cantidad de días debe estar entre 1 y 60."
 
 
 def test_reserva_marca_el_ejemplar_como_reservado():

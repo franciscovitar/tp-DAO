@@ -3,11 +3,15 @@ from datetime import datetime
 from datos.base_datos import conectar, ARCHIVO_BD
 from modelos.remito import Remito
 from patrones.observer import HistorialRemitoObserver
+from datos.validaciones import validar_codigo
 
 
 def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
-    if numero.strip() == "":
+    if (numero or "").strip() == "":
         return False, "Número de remito obligatorio"
+    ok, numero = validar_codigo(numero, "número de remito")
+    if not ok:
+        return False, numero
 
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
@@ -52,7 +56,7 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         conexion.close()
         return False, "El ejemplar no se encuentra en la sede de origen"
 
-    cursor.execute("SELECT id FROM remitos WHERE numero = ?", (numero,))
+    cursor.execute("SELECT id FROM remitos WHERE numero = ? COLLATE NOCASE", (numero,))
     if cursor.fetchone() is not None:
         conexion.close()
         return False, "Ya existe un remito con ese número"
@@ -98,8 +102,11 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
 
 
 def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
-    if numero.strip() == "":
+    if (numero or "").strip() == "":
         return False, "Número de remito obligatorio"
+    ok, numero = validar_codigo(numero, "número de remito")
+    if not ok:
+        return False, numero
 
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
@@ -113,7 +120,7 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     if prestamo is None:
         conexion.close()
         return False, "Préstamo inexistente"
-    if prestamo[3] != "DEVUELTO":
+    if prestamo[3] not in ("DEVUELTO", "CANCELADO"):
         conexion.close()
         return False, "El préstamo todavía no fue devuelto"
     if prestamo[1] == prestamo[2]:
@@ -134,7 +141,7 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         conexion.close()
         return False, "La sede destino está dada de baja"
 
-    cursor.execute("SELECT id FROM remitos WHERE numero = ?", (numero,))
+    cursor.execute("SELECT id FROM remitos WHERE numero = ? COLLATE NOCASE", (numero,))
     if cursor.fetchone() is not None:
         conexion.close()
         return False, "Ya existe un remito con ese número"

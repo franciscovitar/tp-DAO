@@ -79,6 +79,7 @@ def test_guardar_socio_limpia_formulario_solo_despues_de_guardar():
         socio_id=None,
         socio_vars=datos,
         refrescar_todo=lambda: eventos.append("refrescar"),
+        notificar=lambda mensaje: None,
     )
 
     def limpiar():

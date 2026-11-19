@@ -107,7 +107,7 @@ def prestamos_vencidos(nombre_archivo=ARCHIVO_BD):
         JOIN ejemplares e ON e.id = p.ejemplar_id
         JOIN libros l ON l.id = e.libro_id
         WHERE p.estado = 'ACTIVO'
-          AND date(p.fecha_vencimiento) < date('now')
+          AND date(p.fecha_vencimiento) < date('now', 'localtime')
         ORDER BY p.fecha_vencimiento
     """)
     vencidos = cursor.fetchall()

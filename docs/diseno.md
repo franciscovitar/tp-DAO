@@ -87,6 +87,9 @@ inicial: al activar, el personal confirma el valor del campo «Días».
 Antes de activar un préstamo interbibliotecario se comprueba nuevamente que
 el socio siga habilitado, ya que su condición puede cambiar durante el
 traslado del ejemplar.
+También se verifica que las sedes origen y destino sigan activas al iniciar
+el préstamo. Antes de despachar cualquier remito se vuelven a verificar
+ambas sedes, ya que pueden haberse dado de baja desde la preparación.
 
 ## Persistencia
 

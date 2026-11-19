@@ -2,7 +2,7 @@ import os
 from datetime import date, timedelta
 
 from datos.base_datos import crear_tablas
-from datos.sedes import agregar_sede
+from datos.sedes import agregar_sede, cambiar_estado_sede
 from datos.socios import agregar_socio, cambiar_habilitacion_socio
 from datos.libros import agregar_libro
 from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
@@ -135,3 +135,73 @@ def test_no_permite_saltar_estados_del_remito():
     estados = [fila[0] for fila in listar_historial_remito(
         id_remito, ARCHIVO_TEST)]
     assert estados == ["PREPARADO"]
+
+
+def test_no_despacha_si_origen_se_dio_de_baja_despues_de_preparar():
+    origen, destino, socio, ejemplar = crear_datos()
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, id_remito = crear_remito(id_prestamo, "R-001", ARCHIVO_TEST)
+
+    assert cambiar_estado_sede(origen.id, False, ARCHIVO_TEST)
+    ok, mensaje = cambiar_estado_remito(
+        id_remito, "DESPACHADO", nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La sede origen está dada de baja"
+    assert buscar_remito(id_remito, ARCHIVO_TEST)[8] == "PREPARADO"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"
+    assert [fila[0] for fila in listar_historial_remito(id_remito, ARCHIVO_TEST)] == ["PREPARADO"]
+
+
+def test_no_despacha_si_destino_se_dio_de_baja_despues_de_preparar():
+    _, destino, socio, ejemplar = crear_datos()
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, id_remito = crear_remito(id_prestamo, "R-001", ARCHIVO_TEST)
+
+    assert cambiar_estado_sede(destino.id, False, ARCHIVO_TEST)
+    ok, mensaje = cambiar_estado_remito(
+        id_remito, "DESPACHADO", nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La sede destino está dada de baja"
+    assert buscar_remito(id_remito, ARCHIVO_TEST)[8] == "PREPARADO"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"
+
+
+def crear_prestamo_recibido():
+    origen, destino, socio, ejemplar = crear_datos()
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, id_remito = crear_remito(id_prestamo, "R-001", ARCHIVO_TEST)
+    for estado in ("DESPACHADO", "EN_TRANSITO", "RECIBIDO"):
+        assert cambiar_estado_remito(id_remito, estado, nombre_archivo=ARCHIVO_TEST)[0]
+    return origen, destino, id_prestamo
+
+
+def test_no_activa_prestamo_si_destino_se_dio_de_baja_despues_de_recibir():
+    _, destino, id_prestamo = crear_prestamo_recibido()
+
+    assert cambiar_estado_sede(destino.id, False, ARCHIVO_TEST)
+    ok, mensaje = activar_prestamo_interbibliotecario(
+        id_prestamo, nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La sede destino está dada de baja"
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "SOLICITADO"
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[6] is None
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"
+
+
+def test_no_activa_prestamo_si_origen_se_dio_de_baja_despues_de_recibir():
+    origen, _, id_prestamo = crear_prestamo_recibido()
+
+    assert cambiar_estado_sede(origen.id, False, ARCHIVO_TEST)
+    ok, mensaje = activar_prestamo_interbibliotecario(
+        id_prestamo, nombre_archivo=ARCHIVO_TEST)
+
+    assert not ok
+    assert mensaje == "La sede origen está dada de baja"
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "SOLICITADO"
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "RESERVADO"

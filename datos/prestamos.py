@@ -196,7 +196,7 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT ejemplar_id, sede_destino_id, estado, socio_id
+        SELECT ejemplar_id, sede_destino_id, estado, socio_id, sede_origen_id
         FROM prestamos
         WHERE id = ?
     """, (id_prestamo,))
@@ -207,6 +207,14 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     if prestamo[2] != "SOLICITADO":
         conexion.close()
         return False, "La solicitud no está pendiente"
+
+    # Las sedes pudieron ser dadas de baja durante el traslado.
+    for id_sede, tipo in ((prestamo[4], "origen"), (prestamo[1], "destino")):
+        cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
+        sede = cursor.fetchone()
+        if sede is None or sede[0] == 0:
+            conexion.close()
+            return False, f"La sede {tipo} está dada de baja"
 
     cursor.execute("SELECT habilitado FROM socios WHERE id = ?", (prestamo[3],))
     socio = cursor.fetchone()

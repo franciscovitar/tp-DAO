@@ -219,6 +219,15 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
         estado=fila[8], id=fila[0]
     )
 
+    # Una sede pudo haber sido dada de baja después de preparar el remito.
+    if nuevo_estado == "DESPACHADO" and fila[8] == "PREPARADO":
+        for id_sede, tipo in ((fila[3], "origen"), (fila[4], "destino")):
+            cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
+            sede = cursor.fetchone()
+            if sede is None or sede[0] == 0:
+                conexion.close()
+                return False, f"La sede {tipo} está dada de baja"
+
     historial_observer = HistorialRemitoObserver(cursor)
     remito.attach(historial_observer)
 

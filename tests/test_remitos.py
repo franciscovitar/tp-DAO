@@ -1,4 +1,5 @@
 import os
+from datetime import date, timedelta
 
 from datos.base_datos import crear_tablas
 from datos.sedes import agregar_sede
@@ -84,9 +85,10 @@ def test_flujo_interbibliotecario_hasta_activar_prestamo():
     assert estados == ["PREPARADO", "DESPACHADO", "EN_TRANSITO", "RECIBIDO"]
 
     ok, _ = activar_prestamo_interbibliotecario(
-        id_prestamo, nombre_archivo=ARCHIVO_TEST)
+        id_prestamo, dias=7, nombre_archivo=ARCHIVO_TEST)
     assert ok
     assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[9] == "ACTIVO"
+    assert buscar_prestamo(id_prestamo, ARCHIVO_TEST)[7] == (date.today() + timedelta(days=7)).isoformat()
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PRESTADO"
 
 

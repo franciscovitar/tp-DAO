@@ -63,7 +63,7 @@ class Remito {
   + cambiar_estado()
 }
 
-Libro "1" -- "1..*" Ejemplar
+Libro "1" -- "0..*" Ejemplar
 Sede "1" -- "0..*" Ejemplar : pertenencia
 Sede "1" -- "0..*" Ejemplar : ubicación actual
 

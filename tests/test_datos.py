@@ -4,7 +4,10 @@ from datos.base_datos import crear_tablas
 from datos.sedes import agregar_sede, buscar_sede, modificar_sede, cambiar_estado_sede
 from datos.socios import agregar_socio, buscar_socio_por_dni, cambiar_habilitacion_socio
 from datos.libros import agregar_libro, buscar_libro_por_isbn
-from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo, listar_ejemplares, cambiar_estado_ejemplar
+from datos.ejemplares import (
+    agregar_ejemplar, buscar_ejemplar_por_codigo, listar_ejemplares,
+    cambiar_estado_ejemplar, cambiar_estado_fisico_ejemplar,
+)
 from modelos.sede import Sede
 from modelos.socio import Socio
 from modelos.libro import Libro
@@ -226,6 +229,24 @@ def test_devolucion_danada_deja_ejemplar_fuera_de_circulacion():
         socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
     assert not ok
     assert mensaje == "El ejemplar no está disponible"
+
+
+def test_ejemplar_danado_no_puede_reactivarse_sin_reparacion():
+    from datos.prestamos import registrar_prestamo_local, registrar_devolucion
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    ok, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+    assert registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)[0]
+
+    assert not cambiar_estado_ejemplar(ejemplar.id, "DISPONIBLE", ARCHIVO_TEST)
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[5:7] == ("BAJA", "DANADO")
+
+    # La reactivación sí es válida una vez actualizado su estado físico.
+    assert cambiar_estado_fisico_ejemplar(ejemplar.id, "BUENO", ARCHIVO_TEST)
+    assert cambiar_estado_ejemplar(ejemplar.id, "DISPONIBLE", ARCHIVO_TEST)
 
 
 def test_devolucion_rechaza_estado_fisico_invalido():

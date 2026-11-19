@@ -132,8 +132,8 @@ class BibliotecaApp(tk.Tk):
         else:
             modificar_sede(sede)
             messagebox.showinfo("Sedes", "Sede modificada.")
-        self.limpiar_form_sede()
         self.refrescar_todo()
+        self.limpiar_form_sede()
 
     def cargar_sede_seleccionada(self, event=None):
         fila = self.fila_seleccionada(self.tree_sedes)
@@ -215,8 +215,8 @@ class BibliotecaApp(tk.Tk):
             return
 
         messagebox.showinfo("Socios", "Datos guardados.")
-        self.limpiar_form_socio()
         self.refrescar_todo()
+        self.limpiar_form_socio()
 
     def cargar_socio_seleccionado(self, event=None):
         fila = self.fila_seleccionada(self.tree_socios)
@@ -321,8 +321,8 @@ class BibliotecaApp(tk.Tk):
             messagebox.showerror("Libros", "Ya existe un libro con ese ISBN.")
             return
         messagebox.showinfo("Libros", "Datos guardados.")
-        self.limpiar_form_libro()
         self.refrescar_todo()
+        self.limpiar_form_libro()
 
     def cargar_libro_seleccionado(self, event=None):
         fila = self.fila_seleccionada(self.tree_libros)
@@ -358,9 +358,11 @@ class BibliotecaApp(tk.Tk):
         if not agregar_ejemplar(Ejemplar(codigo, libro, sede)):
             messagebox.showerror("Ejemplar", "Ya existe un ejemplar con ese código.")
             return
-        self.var_codigo_ejemplar.set("")
         messagebox.showinfo("Ejemplar", "Ejemplar registrado.")
         self.refrescar_todo()
+        self.var_codigo_ejemplar.set("")
+        self.combo_libro_ejemplar.set("")
+        self.combo_sede_ejemplar.set("")
 
     def toggle_ejemplar(self):
         fila = self.fila_seleccionada(self.tree_ejemplares)
@@ -371,10 +373,16 @@ class BibliotecaApp(tk.Tk):
         estado_actual = fila[5]
         nuevo_estado = "DISPONIBLE" if estado_actual == "BAJA" else "BAJA"
 
+        if nuevo_estado == "DISPONIBLE" and fila[6] == "DANADO":
+            messagebox.showerror(
+                "Ejemplar", "No se puede activar un ejemplar dañado. Debe repararse primero."
+            )
+            return
+
         if not cambiar_estado_ejemplar(int(fila[0]), nuevo_estado):
             messagebox.showerror(
                 "Ejemplar",
-                "El ejemplar sólo puede activarse o desactivarse cuando no está reservado, prestado ni en tránsito."
+                "El ejemplar sólo puede activarse o desactivarse si está disponible o de baja y no está dañado."
             )
             return
 
@@ -430,6 +438,8 @@ class BibliotecaApp(tk.Tk):
         ok, dato = registrar_prestamo_local(ids[0], ids[1], ids[2], int(self.var_dias.get()))
         self.mostrar_resultado("Préstamo local", ok, dato)
         self.refrescar_todo()
+        if ok:
+            self.limpiar_form_prestamo()
 
     def crear_prestamo_inter(self):
         ids = (
@@ -443,6 +453,16 @@ class BibliotecaApp(tk.Tk):
         ok, dato = solicitar_prestamo_interbibliotecario(ids[0], ids[1], ids[2])
         self.mostrar_resultado("Solicitud interbibliotecaria", ok, dato)
         self.refrescar_todo()
+        if ok:
+            # Los días se eligen al activar el préstamo, después de recibir el remito.
+            self.limpiar_form_prestamo(restablecer_dias=False)
+
+    def limpiar_form_prestamo(self, restablecer_dias=True):
+        self.combo_prestamo_socio.set("")
+        self.combo_prestamo_ejemplar.set("")
+        self.combo_prestamo_sede.set("")
+        if restablecer_dias:
+            self.var_dias.set("14")
 
     def devolver_prestamo(self):
         fila = self.fila_seleccionada(self.tree_prestamos)
@@ -452,15 +472,22 @@ class BibliotecaApp(tk.Tk):
         ok, dato = registrar_devolucion(int(fila[0]), self.var_estado_fisico.get())
         self.mostrar_resultado("Devolución", ok, dato)
         self.refrescar_todo()
+        if ok:
+            self.var_estado_fisico.set("BUENO")
 
     def activar_inter(self):
         fila = self.fila_seleccionada(self.tree_prestamos)
         if fila is None:
             messagebox.showwarning("Préstamo", "Seleccione una solicitud recibida.")
             return
-        ok, dato = activar_prestamo_interbibliotecario(int(fila[0]))
+        if not self.var_dias.get().isdigit() or int(self.var_dias.get()) <= 0:
+            messagebox.showerror("Préstamo", "Los días deben ser un número mayor a cero.")
+            return
+        ok, dato = activar_prestamo_interbibliotecario(int(fila[0]), int(self.var_dias.get()))
         self.mostrar_resultado("Préstamo interbibliotecario", ok, dato)
         self.refrescar_todo()
+        if ok:
+            self.var_dias.set("14")
 
     def crear_tab_reservas(self):
         self.tab_reservas = ttk.Frame(self.notebook)
@@ -497,6 +524,10 @@ class BibliotecaApp(tk.Tk):
         ok, dato = registrar_reserva(ids[0], ids[1], ids[2])
         self.mostrar_resultado("Reserva", ok, dato)
         self.refrescar_todo()
+        if ok:
+            self.combo_reserva_socio.set("")
+            self.combo_reserva_ejemplar.set("")
+            self.combo_reserva_sede.set("")
 
     def cancelar_reserva_ui(self):
         fila = self.fila_seleccionada(self.tree_reservas)
@@ -550,9 +581,10 @@ class BibliotecaApp(tk.Tk):
             return
         ok, dato = crear_remito(id_prestamo, numero)
         self.mostrar_resultado("Remito", ok, dato)
+        self.refrescar_todo()
         if ok:
             self.var_numero_remito.set("")
-        self.refrescar_todo()
+            self.combo_remito_prestamo.set("")
 
     def crear_remito_retorno_ui(self):
         id_prestamo = self.id_combo(self.combo_remito_retorno)
@@ -562,9 +594,10 @@ class BibliotecaApp(tk.Tk):
             return
         ok, dato = crear_remito_retorno(id_prestamo, numero)
         self.mostrar_resultado("Remito de retorno", ok, dato)
+        self.refrescar_todo()
         if ok:
             self.var_numero_retorno.set("")
-        self.refrescar_todo()
+            self.combo_remito_retorno.set("")
 
     def avanzar_remito(self, estado):
         fila = self.fila_seleccionada(self.tree_remitos)
@@ -715,6 +748,9 @@ class BibliotecaApp(tk.Tk):
 
     def mostrar_resultado(self, titulo, ok, dato):
         if ok:
-            messagebox.showinfo(titulo, str(dato))
+            mensaje = f"{titulo} registrado correctamente. ID: {dato}" if isinstance(dato, int) else str(dato)
+            if titulo == "Solicitud interbibliotecaria":
+                mensaje += "\nLos días del préstamo se confirmarán al activarlo, después de recibir el remito."
+            messagebox.showinfo(titulo, mensaje)
         else:
             messagebox.showerror(titulo, str(dato))

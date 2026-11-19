@@ -16,7 +16,7 @@ El historial de cada remito se almacena en la tabla `historial_remito` mediante
 `HistorialRemitoObserver`. No se necesita una clase de dominio separada para
 representar cada registro de historial.
 
-Un Libro puede tener varios Ejemplares. La sede de pertenencia indica a qué biblioteca pertenece la copia; la sede actual indica dónde se encuentra físicamente en cada momento.
+Un Libro puede tener cero o varios Ejemplares. La sede de pertenencia indica a qué biblioteca pertenece la copia; la sede actual indica dónde se encuentra físicamente en cada momento.
 
 ## Estados principales
 
@@ -77,7 +77,12 @@ Al registrarlo, el préstamo queda ACTIVO y el ejemplar pasa a PRESTADO.
 Si una devolución registra el estado físico `DANADO`, el ejemplar no vuelve
 automáticamente a circulación: queda de `BAJA` al finalizar una devolución
 local o al recibirse el remito de retorno interbibliotecario. Puede ser
-reactivado posteriormente de forma explícita por el personal de biblioteca.
+reactivado por el personal de biblioteca sólo después de que su estado físico
+se haya actualizado a `BUENO` tras la reparación.
+
+La cantidad de días se aplica al registrar un préstamo local o al activar
+un préstamo interbibliotecario recibido. No queda fijada en la solicitud
+inicial: al activar, el personal confirma el valor del campo «Días».
 
 Antes de activar un préstamo interbibliotecario se comprueba nuevamente que
 el socio siga habilitado, ya que su condición puede cambiar durante el

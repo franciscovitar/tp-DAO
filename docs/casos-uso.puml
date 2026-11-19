@@ -2,7 +2,6 @@
 left to right direction
 
 actor "Personal de biblioteca" as Personal
-actor Socio
 
 rectangle "Sistema de Préstamos Interbibliotecarios" {
   usecase "Administrar sedes" as UC1
@@ -33,8 +32,6 @@ Personal --> UC10
 Personal --> UC11
 Personal --> UC12
 Personal --> UC13
-
-Socio --> UC4
 
 UC6 .> UC8 : habilita
 UC11 .> UC12 : si es interbibliotecario

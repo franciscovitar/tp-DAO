@@ -59,13 +59,18 @@ def cambiar_estado_ejemplar(id_ejemplar, estado, nombre_archivo=ARCHIVO_BD):
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""
-        SELECT estado
+        SELECT estado, estado_fisico
         FROM ejemplares
         WHERE id = ?
     """, (id_ejemplar,))
     ejemplar = cursor.fetchone()
 
     if ejemplar is None or ejemplar[0] not in ("DISPONIBLE", "BAJA"):
+        conexion.close()
+        return False
+
+    # Un ejemplar dañado debe repararse antes de volver a circular.
+    if estado == "DISPONIBLE" and ejemplar[1] == "DANADO":
         conexion.close()
         return False
 

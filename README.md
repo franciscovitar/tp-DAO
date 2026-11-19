@@ -11,6 +11,7 @@ Aplicación desarrollada en Python con SQLite y una interfaz gráfica en Tkinter
 - préstamos locales e interbibliotecarios;
 - reservas y devoluciones;
 - retiro de circulación de ejemplares devueltos dañados;
+- bloqueo de la reactivación de ejemplares dañados hasta su reparación;
 - remitos de ida y retorno con trazabilidad;
 - consulta de disponibilidad;
 - cinco reportes de gestión;
@@ -19,6 +20,8 @@ Aplicación desarrollada en Python con SQLite y una interfaz gráfica en Tkinter
 El flujo interbibliotecario mantiene la sede de pertenencia del ejemplar y registra su ubicación actual durante el traslado. Los remitos siguen el ciclo:
 
 `PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO`
+
+Los días del préstamo se aplican al registrar un préstamo local o al **activar** una solicitud interbibliotecaria recibida. Los formularios se limpian después de guardar correctamente; si hay un error, conservan los datos para corregirlos.
 
 ## Documentación
 
@@ -52,4 +55,4 @@ python main.py
 python -m pytest -q
 ```
 
-La suite actual contiene 39 pruebas automatizadas.
+La suite actual contiene 44 pruebas automatizadas.

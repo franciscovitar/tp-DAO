@@ -14,6 +14,7 @@ from datos.validaciones import (
     validar_dias_prestamo,
     validar_dni,
     validar_email,
+    validar_horario,
     validar_isbn,
     validar_telefono,
 )
@@ -81,12 +82,13 @@ def test_anio_vacio_es_opcional():
     assert validar_anio("") == (True, None)
 
 
-@pytest.mark.parametrize("valor", ["sin-arroba", "a@b", "a@@b.com", "a b@c.com"])
+@pytest.mark.parametrize("valor", ["sin-arroba", "a@b", "a@@b.com", "a b@c.com",
+                                   "3..hg@gmail.com", ".ana@mail.com", "ana.@mail.com", "a@mail..com"])
 def test_email_invalido(valor):
     assert not validar_email(valor)[0]
 
 
-@pytest.mark.parametrize("valor", ["12", "telefono", "1" * 30])
+@pytest.mark.parametrize("valor", ["12", "777777", "77777777", "telefono", "1" * 30])
 def test_telefono_invalido(valor):
     assert not validar_telefono(valor)[0]
 
@@ -122,3 +124,73 @@ def test_numero_de_remito_con_caracteres_invalidos():
     ok, mensaje = crear_remito(1, "R 001; DROP TABLE", ARCHIVO_TEST)
     assert not ok
     assert "letras, números y guiones" in mensaje
+
+
+@pytest.mark.parametrize("valor", [
+    "9 a 18", "09:00-18:00", "Lun a Vie 9:00 a 18:00", "lunes a viernes 8 a 20",
+    "Lun-Vie 9 a 13, Sáb 9 a 12", "8hs a 20hs", "9 a 13 y 16 a 20", "",
+])
+def test_horario_valido(valor):
+    assert validar_horario(valor)[0]
+
+
+@pytest.mark.parametrize("valor", ["lol", "9", "18 a 9", "25 a 30", "9:75 a 18", "todo el día"])
+def test_horario_invalido(valor):
+    assert not validar_horario(valor)[0]
+
+
+def test_sede_con_horario_invalido_no_se_valida():
+    ok, mensaje = validar_datos_sede("General Paz", "Av. Colón 100", "3515551234", "", "lol")
+    assert not ok
+    assert "horario" in mensaje
+
+
+@pytest.mark.parametrize("nombre, direccion", [
+    ("!!!", "Av. Colón 100"),
+    ("General Paz", "sq846dw/9q8"),
+    ("General Paz", "Colón"),
+    ("General Paz", "12345"),
+])
+def test_sede_con_nombre_o_direccion_basura(nombre, direccion):
+    assert not validar_datos_sede(nombre, direccion, "", "", "")[0]
+
+
+def test_sede_valida_normal():
+    ok, datos = validar_datos_sede("Sede Norte 2", "Av. Colón 1200, piso 1", "351 555-1234",
+                                   "norte@biblio.com", "Lun a Vie 9 a 18")
+    assert ok
+
+
+@pytest.mark.parametrize("titulo, autor", [("???", "Borges"), ("Ficciones", "123"), ("Ficciones", "@@@")])
+def test_libro_con_titulo_o_autor_basura(titulo, autor):
+    assert not validar_datos_libro("9789500000001", titulo, autor, "", "")[0]
+
+
+def test_libro_con_titulo_numerico_y_autor_con_iniciales():
+    assert validar_datos_libro("9789500000001", "1984", "J. R. R. Tolkien", "Minotauro", "1949")[0]
+
+
+@pytest.mark.parametrize("titulo", ["1984", "2001: Odisea del espacio", "¿Quién se ha llevado mi queso?", "C++ moderno"])
+def test_titulos_reales_se_aceptan(titulo):
+    assert validar_datos_libro("9789500000001", titulo, "Autor", "", "")[0]
+
+
+@pytest.mark.parametrize("titulo", ["0", "-5", "3.5", "²", "Ana 😀", "<script>"])
+def test_titulos_basura_se_rechazan(titulo):
+    assert not validar_datos_libro("9789500000001", titulo, "Autor", "", "")[0]
+
+
+@pytest.mark.parametrize("codigo", ["0", "-5", "EJ-", "E J", "EJ😀"])
+def test_codigo_de_ejemplar_invalido(codigo):
+    from datos.validaciones import validar_codigo
+    assert not validar_codigo(codigo, "código")[0]
+
+
+@pytest.mark.parametrize("titulo", ["000000000", "000", "99999999"])
+def test_titulo_numerico_largo_o_ceros_se_rechaza(titulo):
+    assert not validar_datos_libro("9789500000001", titulo, "Autor", "", "")[0]
+
+
+@pytest.mark.parametrize("editorial", ["5", "988", "!!!"])
+def test_editorial_sin_letras_se_rechaza(editorial):
+    assert not validar_datos_libro("9789500000001", "Ficciones", "Borges", editorial, "")[0]

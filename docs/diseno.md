@@ -34,6 +34,7 @@ Un Libro puede tener cero o varios Ejemplares. La sede de pertenencia indica a q
 - SOLICITADO
 - ACTIVO
 - DEVUELTO
+- CANCELADO (solicitud interbibliotecaria cuyo socio quedó inhabilitado durante el traslado)
 
 ### Reserva
 
@@ -77,8 +78,8 @@ Al registrarlo, el préstamo queda ACTIVO y el ejemplar pasa a PRESTADO.
 Si una devolución registra el estado físico `DANADO`, el ejemplar no vuelve
 automáticamente a circulación: queda de `BAJA` al finalizar una devolución
 local o al recibirse el remito de retorno interbibliotecario. Puede ser
-reactivado por el personal de biblioteca sólo después de que su estado físico
-se haya actualizado a `BUENO` tras la reparación.
+reactivado por el personal de biblioteca con el botón «Marcar como reparado»,
+que pasa su estado físico a `BUENO` y lo deja `DISPONIBLE`.
 
 La cantidad de días se aplica al registrar un préstamo local o al activar
 un préstamo interbibliotecario recibido. No queda fijada en la solicitud

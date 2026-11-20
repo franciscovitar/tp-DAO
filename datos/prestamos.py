@@ -4,6 +4,15 @@ from datos.base_datos import conectar, ARCHIVO_BD
 from datos.validaciones import validar_dias_prestamo
 
 
+def _tiene_prestamos_vencidos(cursor, id_socio):
+    cursor.execute("""
+        SELECT 1 FROM prestamos
+        WHERE socio_id = ? AND estado = 'ACTIVO'
+          AND date(fecha_vencimiento) < date('now', 'localtime')
+    """, (id_socio,))
+    return cursor.fetchone() is not None
+
+
 def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
                               nombre_archivo=ARCHIVO_BD):
     ok, dias = validar_dias_prestamo(dias)
@@ -25,6 +34,9 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
     if socio[0] == 0:
         conexion.close()
         return False, "El socio está inhabilitado"
+    if _tiene_prestamos_vencidos(cursor, id_socio):
+        conexion.close()
+        return False, "El socio tiene préstamos vencidos sin devolver"
 
     cursor.execute("""
         SELECT activa
@@ -123,6 +135,9 @@ def solicitar_prestamo_interbibliotecario(id_socio, id_ejemplar,
     if socio[0] == 0:
         conexion.close()
         return False, "El socio está inhabilitado"
+    if _tiene_prestamos_vencidos(cursor, id_socio):
+        conexion.close()
+        return False, "El socio tiene préstamos vencidos sin devolver"
 
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_destino,))
     destino = cursor.fetchone()

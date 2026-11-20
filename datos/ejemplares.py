@@ -97,3 +97,65 @@ def cambiar_estado_fisico_ejemplar(id_ejemplar, estado_fisico, nombre_archivo=AR
     modificadas = cursor.rowcount
     conexion.close()
     return modificadas > 0
+
+
+def marcar_ejemplar_reparado(id_ejemplar, nombre_archivo=ARCHIVO_BD):
+    """Un ejemplar dañado y de baja vuelve a estar disponible tras repararlo."""
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        UPDATE ejemplares
+        SET estado_fisico = 'BUENO', estado = 'DISPONIBLE'
+        WHERE id = ? AND estado = 'BAJA' AND estado_fisico = 'DANADO'
+    """, (id_ejemplar,))
+    conexion.commit()
+    modificadas = cursor.rowcount
+    conexion.close()
+    return modificadas > 0
+
+
+def modificar_ejemplar(id_ejemplar, codigo, id_libro, id_sede, nombre_archivo=ARCHIVO_BD):
+    """Modifica código, libro y sede de un ejemplar que está en su sede y sin movimientos en curso."""
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT estado, libro_id, sede_pertenencia_id, sede_actual_id
+        FROM ejemplares WHERE id = ?
+    """, (id_ejemplar,))
+    ejemplar = cursor.fetchone()
+    if ejemplar is None:
+        conexion.close()
+        return False, "Ejemplar inexistente"
+    if ejemplar[0] not in ("DISPONIBLE", "BAJA") or ejemplar[2] != ejemplar[3]:
+        conexion.close()
+        return False, "Sólo se puede modificar un ejemplar disponible o de baja que esté en su sede"
+
+    cursor.execute("SELECT id FROM ejemplares WHERE codigo = ? COLLATE NOCASE AND id <> ?",
+                   (codigo, id_ejemplar))
+    if cursor.fetchone() is not None:
+        conexion.close()
+        return False, "Ya existe un ejemplar con ese código"
+
+    cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
+    sede = cursor.fetchone()
+    if sede is None or sede[0] == 0:
+        conexion.close()
+        return False, "La sede está dada de baja"
+
+    if id_libro != ejemplar[1]:
+        cursor.execute("""
+            SELECT 1 FROM prestamos WHERE ejemplar_id = ?
+            UNION SELECT 1 FROM reservas WHERE ejemplar_id = ?
+        """, (id_ejemplar, id_ejemplar))
+        if cursor.fetchone() is not None:
+            conexion.close()
+            return False, "No se puede cambiar el libro de un ejemplar que ya tiene préstamos o reservas"
+
+    cursor.execute("""
+        UPDATE ejemplares
+        SET codigo = ?, libro_id = ?, sede_pertenencia_id = ?, sede_actual_id = ?
+        WHERE id = ?
+    """, (codigo, id_libro, id_sede, id_sede, id_ejemplar))
+    conexion.commit()
+    conexion.close()
+    return True, "Ejemplar modificado"

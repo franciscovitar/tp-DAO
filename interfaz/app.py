@@ -1,3 +1,4 @@
+import unicodedata
 import tkinter as tk
 from datetime import datetime
 from tkinter import ttk, messagebox
@@ -10,7 +11,14 @@ from modelos.ejemplar import Ejemplar
 from datos.sedes import listar_sedes, agregar_sede, modificar_sede, cambiar_estado_sede
 from datos.socios import listar_socios, agregar_socio, modificar_socio, cambiar_habilitacion_socio
 from datos.libros import listar_libros, agregar_libro, modificar_libro
-from datos.ejemplares import listar_ejemplares, agregar_ejemplar, cambiar_estado_ejemplar
+from datos.ejemplares import (
+    listar_ejemplares,
+    agregar_ejemplar,
+    cambiar_estado_ejemplar,
+    marcar_ejemplar_reparado,
+    modificar_ejemplar,
+    buscar_ejemplar_por_codigo,
+)
 from datos.prestamos import (
     listar_prestamos,
     listar_prestamos_pendientes_retorno,
@@ -63,6 +71,7 @@ ESTADOS_LEGIBLES = {
     "CANCELADA": "Cancelada",
     "ACTIVA": "Activa",
     "PENDIENTE": "Pendiente",
+    "PENDIENTE_RETORNO": "Pendiente de retorno",
     "CUMPLIDA": "Cumplida",
     "PREPARADO": "Preparado",
     "DESPACHADO": "Despachado",
@@ -79,6 +88,11 @@ COLUMNAS_CENTRADAS = {
 }
 
 SIN_DATO = "—"
+
+
+def normalizar_busqueda(texto):
+    texto = unicodedata.normalize("NFD", str(texto).lower())
+    return "".join(c for c in texto if unicodedata.category(c) != "Mn").strip()
 
 
 def formatear_valor(valor):
@@ -112,6 +126,7 @@ class BibliotecaApp(tk.Tk):
         self._centrar(1240, 760)
 
         self.filas_por_tree = {}
+        self.busquedas = {}
         self._id_aviso = None
 
         # La barra de estado se empaqueta primero para que siempre quede visible.
@@ -194,7 +209,16 @@ class BibliotecaApp(tk.Tk):
         ttk.Label(barra, text=texto, style="Ayuda.TLabel").pack(side="left")
         return barra
 
-    def crear_tree(self, padre, columnas, titulos, anchos=None):
+    def crear_tree(self, padre, columnas, titulos, anchos=None, buscador=True):
+        var_busqueda = tk.StringVar()
+        if buscador:
+            barra_busqueda = ttk.Frame(padre)
+            barra_busqueda.pack(fill="x", pady=(0, 6))
+            ttk.Label(barra_busqueda, text="Buscar:").pack(side="left", padx=(0, 6))
+            entrada = ttk.Entry(barra_busqueda, textvariable=var_busqueda, width=32)
+            entrada.pack(side="left")
+            ttk.Button(barra_busqueda, text="×", width=3,
+                       command=lambda: var_busqueda.set("")).pack(side="left", padx=(4, 0))
         marco = ttk.Frame(padre)
         marco.pack(fill="both", expand=True)
         tree = ttk.Treeview(marco, columns=columnas, show="headings", height=12, selectmode="browse")
@@ -215,6 +239,8 @@ class BibliotecaApp(tk.Tk):
                         stretch=columna not in ("id",))
         tree.tag_configure("alterna", background=FILA_ALTERNA)
         self.filas_por_tree[str(tree)] = {}
+        self.busquedas[str(tree)] = (var_busqueda, [])
+        var_busqueda.trace_add("write", lambda *_: self.mostrar_filas(tree))
         return tree
 
     def limpiar_tree(self, tree):
@@ -228,6 +254,17 @@ class BibliotecaApp(tk.Tk):
         Treeview convierte los valores a texto (y "0123" en 123), así que los
         datos reales se guardan aparte para usarlos al seleccionar una fila.
         """
+        var_busqueda, _ = self.busquedas.get(str(tree), (None, None))
+        self.busquedas[str(tree)] = (var_busqueda, list(filas))
+        self.mostrar_filas(tree)
+
+    def mostrar_filas(self, tree):
+        """Muestra sólo las filas que contienen el texto buscado (sin importar mayúsculas ni acentos)."""
+        var_busqueda, filas = self.busquedas.get(str(tree), (None, []))
+        texto = normalizar_busqueda(var_busqueda.get()) if var_busqueda is not None else ""
+        if texto:
+            filas = [f for f in filas
+                     if texto in normalizar_busqueda(" ".join(str(formatear_valor(v)) for v in f))]
         self.limpiar_tree(tree)
         originales = self.filas_por_tree.setdefault(str(tree), {})
         for n, fila in enumerate(filas):
@@ -515,6 +552,7 @@ class BibliotecaApp(tk.Tk):
 
         # Ejemplares
         ejemplar_form = self.crear_formulario(derecha, "Ejemplar físico")
+        self.ejemplar_id = None
         self.var_codigo_ejemplar = tk.StringVar()
         codigo = ttk.Entry(ejemplar_form, textvariable=self.var_codigo_ejemplar)
         self.campo(ejemplar_form, "Código", codigo, 0, 0, True)
@@ -525,17 +563,20 @@ class BibliotecaApp(tk.Tk):
         for c in range(2):
             ejemplar_form.columnconfigure(c, weight=1, uniform="ejemplar")
         barra = self.barra_botones(ejemplar_form, 2, 2)
-        self.boton(barra, "Agregar ejemplar", self.guardar_ejemplar, primario=True)
+        self.boton(barra, "Guardar ejemplar", self.guardar_ejemplar, primario=True)
+        self.boton(barra, "Limpiar", self.limpiar_form_ejemplar)
         codigo.bind("<Return>", lambda _e: self.guardar_ejemplar())
 
         acciones = self.barra_acciones(derecha, "Ejemplares")
         self.boton(acciones, "Activar / dar de baja", self.toggle_ejemplar)
+        self.boton(acciones, "Marcar como reparado", self.reparar_ejemplar)
         self.tree_ejemplares = self.crear_tree(
             derecha,
             ("id", "codigo", "libro", "pertenencia", "actual", "estado", "fisico"),
             ("ID", "Código", "Libro", "Pertenece a", "Ubicación", "Estado", "Físico"),
             (36, 72, 115, 100, 95, 82, 58),
         )
+        self.tree_ejemplares.bind("<<TreeviewSelect>>", self.cargar_ejemplar_seleccionado)
 
     def guardar_libro(self):
         ok, datos = validar_datos_libro(
@@ -589,6 +630,19 @@ class BibliotecaApp(tk.Tk):
         if libro_fila is None or sede_fila is None:
             messagebox.showerror("Ejemplar", "No se encontraron los datos seleccionados.")
             return
+        if not sede_fila[6]:
+            messagebox.showerror("Ejemplar", "No se pueden agregar ejemplares a una sede dada de baja.")
+            return
+
+        if self.ejemplar_id is not None:
+            ok, dato = modificar_ejemplar(self.ejemplar_id, codigo, id_libro, id_sede)
+            if not ok:
+                messagebox.showerror("Ejemplar", dato)
+                return
+            self.notificar(f"Ejemplar {codigo} modificado.")
+            self.refrescar_todo()
+            self.limpiar_form_ejemplar()
+            return
 
         libro = Libro(libro_fila[1], libro_fila[2], libro_fila[3], libro_fila[4], libro_fila[5], id=libro_fila[0])
         sede = Sede(sede_fila[1], sede_fila[2], sede_fila[3], sede_fila[4], sede_fila[5], bool(sede_fila[6]), sede_fila[0])
@@ -597,9 +651,28 @@ class BibliotecaApp(tk.Tk):
             return
         self.notificar(f"Ejemplar {codigo} registrado en {sede_fila[1]}.")
         self.refrescar_todo()
+        self.limpiar_form_ejemplar()
+
+    def cargar_ejemplar_seleccionado(self, event=None):
+        fila = self.fila_seleccionada(self.tree_ejemplares)
+        if fila is None:
+            return
+        ejemplar = buscar_ejemplar_por_codigo(fila[1])
+        if ejemplar is None:
+            return
+        self.ejemplar_id = ejemplar[0]
+        self.var_codigo_ejemplar.set(ejemplar[1])
+        for combo, id_buscado in ((self.combo_libro_ejemplar, ejemplar[2]),
+                                  (self.combo_sede_ejemplar, ejemplar[3])):
+            valor = next((v for v in combo["values"] if v.split(" - ", 1)[0] == str(id_buscado)), "")
+            combo.set(valor)
+
+    def limpiar_form_ejemplar(self):
+        self.ejemplar_id = None
         self.var_codigo_ejemplar.set("")
         self.combo_libro_ejemplar.set("")
         self.combo_sede_ejemplar.set("")
+        self.tree_ejemplares.selection_remove(self.tree_ejemplares.selection())
 
     def toggle_ejemplar(self):
         fila = self.fila_seleccionada(self.tree_ejemplares)
@@ -625,6 +698,17 @@ class BibliotecaApp(tk.Tk):
             return
 
         self.notificar(f"Ejemplar {fila[1]}: {ESTADOS_LEGIBLES[nuevo_estado].lower()}.")
+        self.refrescar_todo()
+
+    def reparar_ejemplar(self):
+        fila = self.fila_seleccionada(self.tree_ejemplares)
+        if fila is None:
+            messagebox.showwarning("Ejemplar", "Seleccione un ejemplar en la tabla.")
+            return
+        if not marcar_ejemplar_reparado(int(fila[0])):
+            messagebox.showerror("Ejemplar", "Sólo se puede reparar un ejemplar dañado y de baja.")
+            return
+        self.notificar(f"Ejemplar {fila[1]} reparado: vuelve a estar disponible.")
         self.refrescar_todo()
 
     # ------------------------------------------------------------------
@@ -951,8 +1035,9 @@ class BibliotecaApp(tk.Tk):
     def mostrar_reporte(self, columnas, titulos, filas, anchos=None):
         if self.tree_reporte is not None:
             self.filas_por_tree.pop(str(self.tree_reporte), None)
+            self.busquedas.pop(str(self.tree_reporte), None)
             self.tree_reporte.master.destroy()
-        self.tree_reporte = self.crear_tree(self.frame_reporte, columnas, titulos, anchos)
+        self.tree_reporte = self.crear_tree(self.frame_reporte, columnas, titulos, anchos, buscador=False)
         self.cargar_tree(self.tree_reporte, filas)
         if not self.lbl_reporte.cget("text"):
             cantidad = len(filas)
@@ -1054,7 +1139,7 @@ class BibliotecaApp(tk.Tk):
 
     def mostrar_resultado(self, titulo, ok, dato):
         if ok:
-            mensaje = f"{titulo} registrado correctamente (N° {dato})." if isinstance(dato, int) else str(dato)
+            mensaje = f"{titulo}: se registró con el N° {dato}." if isinstance(dato, int) else str(dato)
             if titulo == "Solicitud interbibliotecaria":
                 mensaje += " Los días se confirman al activarlo, cuando llegue el remito."
             self.notificar(mensaje)

@@ -331,3 +331,64 @@ def test_cancelar_reserva_libera_el_ejemplar():
     assert ok
     assert buscar_reserva(id_reserva, ARCHIVO_TEST)[5] == "CANCELADA"
     assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "DISPONIBLE"
+
+
+def test_marcar_ejemplar_reparado_lo_vuelve_disponible():
+    from datos.ejemplares import marcar_ejemplar_reparado
+    from datos.prestamos import registrar_prestamo_local, registrar_devolucion
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    # Un ejemplar disponible no se puede "reparar"
+    assert not marcar_ejemplar_reparado(ejemplar.id, ARCHIVO_TEST)
+
+    _, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    registrar_devolucion(id_prestamo, "DANADO", ARCHIVO_TEST)
+
+    assert marcar_ejemplar_reparado(ejemplar.id, ARCHIVO_TEST)
+    guardado = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert guardado[5:7] == ("DISPONIBLE", "BUENO")
+
+
+def test_no_presta_a_socio_con_prestamos_vencidos():
+    from datos.base_datos import conectar
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    otro = Ejemplar("EJ-002", ejemplar.libro, sede)
+    agregar_ejemplar(otro, ARCHIVO_TEST)
+
+    ok, id_prestamo = registrar_prestamo_local(
+        socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert ok
+    conexion = conectar(ARCHIVO_TEST)
+    conexion.execute("UPDATE prestamos SET fecha_vencimiento = '2020-01-01' WHERE id = ?",
+                     (id_prestamo,))
+    conexion.commit()
+
+    ok, mensaje = registrar_prestamo_local(
+        socio.id, otro.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    assert not ok
+    assert mensaje == "El socio tiene préstamos vencidos sin devolver"
+
+
+def test_modificar_ejemplar():
+    from datos.ejemplares import modificar_ejemplar
+    from datos.prestamos import registrar_prestamo_local
+
+    sede, socio, ejemplar = crear_datos_para_prestamo()
+    otro_libro = Libro("9789500000002", "Dos", "Autor B", "Editorial", 2021)
+    agregar_libro(otro_libro, ARCHIVO_TEST)
+    agregar_ejemplar(Ejemplar("EJ-002", otro_libro, sede), ARCHIVO_TEST)
+
+    # Código duplicado
+    assert not modificar_ejemplar(ejemplar.id, "ej-002", ejemplar.libro.id, sede.id, ARCHIVO_TEST)[0]
+    # Cambio válido de código y libro
+    assert modificar_ejemplar(ejemplar.id, "EJ-100", otro_libro.id, sede.id, ARCHIVO_TEST)[0]
+    assert buscar_ejemplar_por_codigo("EJ-100", ARCHIVO_TEST)[2] == otro_libro.id
+
+    # Prestado: no se puede modificar
+    registrar_prestamo_local(socio.id, ejemplar.id, sede.id, nombre_archivo=ARCHIVO_TEST)
+    ok, mensaje = modificar_ejemplar(ejemplar.id, "EJ-101", otro_libro.id, sede.id, ARCHIVO_TEST)
+    assert not ok
+    assert "disponible o de baja" in mensaje

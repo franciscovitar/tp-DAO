@@ -29,13 +29,10 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
     """, (id_socio,))
     socio = cursor.fetchone()
     if socio is None:
-        conexion.close()
         return False, "Socio inexistente"
     if socio[0] == 0:
-        conexion.close()
         return False, "El socio está inhabilitado"
     if _tiene_prestamos_vencidos(cursor, id_socio):
-        conexion.close()
         return False, "El socio tiene préstamos vencidos sin devolver"
 
     cursor.execute("""
@@ -45,10 +42,8 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
     """, (id_sede,))
     sede = cursor.fetchone()
     if sede is None:
-        conexion.close()
         return False, "Sede inexistente"
     if sede[0] == 0:
-        conexion.close()
         return False, "La sede está dada de baja"
 
     cursor.execute("""
@@ -58,7 +53,6 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
     """, (id_ejemplar,))
     ejemplar = cursor.fetchone()
     if ejemplar is None:
-        conexion.close()
         return False, "Ejemplar inexistente"
 
     reserva_activa = None
@@ -70,17 +64,13 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
         """, (id_ejemplar, "ACTIVA"))
         reserva_activa = cursor.fetchone()
         if reserva_activa is None or reserva_activa[1] != id_socio:
-            conexion.close()
             return False, "El ejemplar está reservado para otro socio"
     elif ejemplar[0] != "DISPONIBLE":
-        conexion.close()
         return False, "El ejemplar no está disponible"
 
     if ejemplar[1] != id_sede:
-        conexion.close()
         return False, "El ejemplar no pertenece a la sede de origen"
     if ejemplar[2] != id_sede:
-        conexion.close()
         return False, "El ejemplar no se encuentra en la sede de origen"
 
     hoy = date.today()
@@ -113,11 +103,9 @@ def registrar_prestamo_local(id_socio, id_ejemplar, id_sede, dias=14,
             """, ("CUMPLIDA", reserva_activa[0]))
 
         conexion.commit()
-        conexion.close()
         return True, id_prestamo
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
@@ -130,22 +118,17 @@ def solicitar_prestamo_interbibliotecario(id_socio, id_ejemplar,
     cursor.execute("SELECT habilitado FROM socios WHERE id = ?", (id_socio,))
     socio = cursor.fetchone()
     if socio is None:
-        conexion.close()
         return False, "Socio inexistente"
     if socio[0] == 0:
-        conexion.close()
         return False, "El socio está inhabilitado"
     if _tiene_prestamos_vencidos(cursor, id_socio):
-        conexion.close()
         return False, "El socio tiene préstamos vencidos sin devolver"
 
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_destino,))
     destino = cursor.fetchone()
     if destino is None:
-        conexion.close()
         return False, "Sede destino inexistente"
     if destino[0] == 0:
-        conexion.close()
         return False, "La sede destino está dada de baja"
 
     cursor.execute("""
@@ -155,24 +138,19 @@ def solicitar_prestamo_interbibliotecario(id_socio, id_ejemplar,
     """, (id_ejemplar,))
     ejemplar = cursor.fetchone()
     if ejemplar is None:
-        conexion.close()
         return False, "Ejemplar inexistente"
     if ejemplar[0] != "DISPONIBLE":
-        conexion.close()
         return False, "El ejemplar no está disponible"
 
     id_sede_origen = ejemplar[2]
     if id_sede_origen == id_sede_destino:
-        conexion.close()
         return False, "El ejemplar ya se encuentra en la sede destino"
     if ejemplar[1] != id_sede_origen:
-        conexion.close()
         return False, "El ejemplar no pertenece a la sede de origen"
 
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_origen,))
     origen = cursor.fetchone()
     if origen is None or origen[0] == 0:
-        conexion.close()
         return False, "La sede origen está dada de baja"
 
     hoy = date.today().isoformat()
@@ -196,11 +174,9 @@ def solicitar_prestamo_interbibliotecario(id_socio, id_ejemplar,
         """, ("RESERVADO", id_ejemplar))
 
         conexion.commit()
-        conexion.close()
         return True, id_prestamo
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
@@ -220,10 +196,8 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     """, (id_prestamo,))
     prestamo = cursor.fetchone()
     if prestamo is None:
-        conexion.close()
         return False, "Préstamo inexistente"
     if prestamo[2] != "SOLICITADO":
-        conexion.close()
         return False, "La solicitud no está pendiente"
 
     # Las sedes pudieron ser dadas de baja durante el traslado.
@@ -231,17 +205,16 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
         cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
         sede = cursor.fetchone()
         if sede is None or sede[0] == 0:
-            conexion.close()
             return False, f"La sede {tipo} está dada de baja"
 
     cursor.execute("SELECT habilitado FROM socios WHERE id = ?", (prestamo[3],))
     socio = cursor.fetchone()
     if socio is None:
-        conexion.close()
         return False, "Socio inexistente"
     if socio[0] == 0:
-        conexion.close()
         return False, "El socio está inhabilitado"
+    if _tiene_prestamos_vencidos(cursor, prestamo[3]):
+        return False, "El socio tiene préstamos vencidos sin devolver"
 
     cursor.execute("""
         SELECT estado, sede_actual_id
@@ -250,7 +223,6 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
     """, (prestamo[0],))
     ejemplar = cursor.fetchone()
     if ejemplar[0] != "RESERVADO" or ejemplar[1] != prestamo[1]:
-        conexion.close()
         return False, "El ejemplar todavía no fue recibido en la sede destino"
 
     hoy = date.today()
@@ -268,11 +240,9 @@ def activar_prestamo_interbibliotecario(id_prestamo, dias=14,
             WHERE id = ?
         """, ("PRESTADO", prestamo[0]))
         conexion.commit()
-        conexion.close()
         return True, "Préstamo activado"
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
@@ -292,10 +262,8 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
     prestamo = cursor.fetchone()
 
     if prestamo is None:
-        conexion.close()
         return False, "Préstamo inexistente"
     if prestamo[1] != "ACTIVO":
-        conexion.close()
         return False, "El préstamo no está activo"
 
     hoy = date.today().isoformat()
@@ -320,49 +288,57 @@ def registrar_devolucion(id_prestamo, estado_fisico="BUENO",
         """, (estado_ejemplar, estado_fisico, prestamo[0]))
 
         conexion.commit()
-        conexion.close()
         return True, "Devolución registrada"
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
 def cancelar_solicitud_interbibliotecaria(id_prestamo, nombre_archivo=ARCHIVO_BD):
-    """Cancela una solicitud cuyo socio quedó inhabilitado mientras el
-    ejemplar viajaba. El ejemplar queda pendiente de retorno a su sede."""
+    """Cancela una solicitud interbibliotecaria que todavía no se activó
+    (el socio desistió o quedó inhabilitado).
+
+    - Si el ejemplar no salió de su sede, vuelve a quedar DISPONIBLE y el
+      remito de envío que estuviera preparado ya no se puede despachar.
+    - Si el ejemplar ya llegó a la sede destino, queda PENDIENTE_RETORNO
+      para generar el remito de retorno.
+    - Si el ejemplar está viajando, hay que esperar a que llegue.
+    """
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT p.estado, s.habilitado, e.estado, e.sede_actual_id,
-               p.sede_destino_id, p.ejemplar_id
+        SELECT p.estado, e.estado, e.sede_actual_id,
+               p.sede_origen_id, p.sede_destino_id, p.ejemplar_id
         FROM prestamos p
-        JOIN socios s ON s.id = p.socio_id
         JOIN ejemplares e ON e.id = p.ejemplar_id
         WHERE p.id = ?
     """, (id_prestamo,))
     fila = cursor.fetchone()
     if fila is None:
-        conexion.close()
         return False, "Préstamo inexistente"
     if fila[0] != "SOLICITADO":
-        conexion.close()
         return False, "Sólo se pueden cancelar solicitudes pendientes"
-    if fila[1] == 1:
-        conexion.close()
-        return False, "Sólo se cancela si el socio está inhabilitado"
-    if fila[2] != "RESERVADO" or fila[3] != fila[4]:
-        conexion.close()
-        return False, "El ejemplar todavía no llegó a la sede destino"
 
-    cursor.execute("UPDATE prestamos SET estado = 'CANCELADO' WHERE id = ?",
-                   (id_prestamo,))
-    cursor.execute("UPDATE ejemplares SET estado = 'PENDIENTE_RETORNO' WHERE id = ?",
-                   (fila[5],))
-    conexion.commit()
-    conexion.close()
-    return True, "Solicitud cancelada. Genere el remito de retorno."
+    if fila[1] == "RESERVADO" and fila[2] == fila[3]:
+        nuevo_estado = "DISPONIBLE"
+        mensaje = "Solicitud cancelada. El ejemplar vuelve a estar disponible."
+    elif fila[1] == "RESERVADO" and fila[2] == fila[4]:
+        nuevo_estado = "PENDIENTE_RETORNO"
+        mensaje = "Solicitud cancelada. Genere el remito de retorno."
+    else:
+        return False, "El ejemplar está en tránsito: espere a recibirlo para cancelar"
+
+    try:
+        cursor.execute("UPDATE prestamos SET estado = 'CANCELADO' WHERE id = ?",
+                       (id_prestamo,))
+        cursor.execute("UPDATE ejemplares SET estado = ? WHERE id = ?",
+                       (nuevo_estado, fila[5]))
+        conexion.commit()
+        return True, mensaje
+    except Exception:
+        conexion.rollback()
+        raise
 
 
 def buscar_prestamo(id_prestamo, nombre_archivo=ARCHIVO_BD):
@@ -376,7 +352,6 @@ def buscar_prestamo(id_prestamo, nombre_archivo=ARCHIVO_BD):
         WHERE id = ?
     """, (id_prestamo,))
     prestamo = cursor.fetchone()
-    conexion.close()
     return prestamo
 
 
@@ -394,6 +369,8 @@ def listar_prestamos_pendientes_retorno(nombre_archivo=ARCHIVO_BD):
         JOIN sedes sd ON sd.id = p.sede_destino_id
         WHERE p.estado IN ('DEVUELTO', 'CANCELADO')
           AND p.sede_origen_id <> p.sede_destino_id
+          AND e.estado = 'PENDIENTE_RETORNO'
+          AND e.sede_actual_id = p.sede_destino_id
           AND NOT EXISTS (
               SELECT 1
               FROM remitos r
@@ -404,7 +381,6 @@ def listar_prestamos_pendientes_retorno(nombre_archivo=ARCHIVO_BD):
         ORDER BY p.id DESC
     """)
     prestamos = cursor.fetchall()
-    conexion.close()
     return prestamos
 
 
@@ -425,5 +401,4 @@ def listar_prestamos(nombre_archivo=ARCHIVO_BD):
         ORDER BY p.id DESC
     """)
     prestamos = cursor.fetchall()
-    conexion.close()
     return prestamos

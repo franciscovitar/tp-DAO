@@ -398,7 +398,13 @@ class BibliotecaApp(tk.Tk):
             messagebox.showwarning("Sedes", "Seleccione una sede en la tabla.")
             return
         nuevo_estado = fila[6] != "Activa"
-        cambiar_estado_sede(int(fila[0]), nuevo_estado)
+        if not cambiar_estado_sede(int(fila[0]), nuevo_estado):
+            messagebox.showerror(
+                "Sedes",
+                "No se puede dar de baja la sede: tiene préstamos entre sedes, "
+                "remitos o devoluciones en curso.",
+            )
+            return
         self.notificar(f"Sede «{fila[1]}» {'reactivada' if nuevo_estado else 'dada de baja'}.")
         self.refrescar_todo()
 

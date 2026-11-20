@@ -12,7 +12,9 @@ Aplicación desarrollada en Python con SQLite y una interfaz gráfica en Tkinter
 - reservas y devoluciones;
 - retiro de circulación de ejemplares devueltos dañados;
 - bloqueo de la reactivación de ejemplares dañados hasta marcarlos como reparados;
-- cancelación de solicitudes interbibliotecarias cuando el socio queda inhabilitado durante el traslado;
+- cancelación de solicitudes interbibliotecarias antes de activarlas (el socio desiste o queda inhabilitado);
+- bloqueo de la baja de una sede mientras tenga préstamos entre sedes, remitos o devoluciones en curso;
+- cancelación automática de las reservas activas de un socio al inhabilitarlo;
 - validación de los datos ingresados (DNI, ISBN, año, email, teléfono, horario, dirección, días de préstamo entre 1 y 60, largo de los textos) y control de duplicados;
 - remitos de ida y retorno con trazabilidad;
 - consulta de disponibilidad;
@@ -23,7 +25,7 @@ El flujo interbibliotecario mantiene la sede de pertenencia del ejemplar y regis
 
 `PREPARADO -> DESPACHADO -> EN_TRANSITO -> RECIBIDO`
 
-Si el socio queda inhabilitado mientras el ejemplar viaja, la solicitud puede cancelarse una vez recibido el ejemplar: el préstamo queda `CANCELADO` y el ejemplar vuelve a su sede con un remito de retorno.
+Una solicitud puede cancelarse mientras no esté activa. Si el ejemplar todavía no salió, vuelve a quedar `DISPONIBLE` y el remito preparado ya no puede despacharse. Si ya llegó a la sede destino, el préstamo queda `CANCELADO` y el ejemplar vuelve a su sede con un remito de retorno. Mientras viaja no se puede cancelar: hay que esperar a recibirlo.
 
 Los días del préstamo se aplican al registrar un préstamo local o al **activar** una solicitud interbibliotecaria recibida. Los formularios se limpian después de guardar correctamente; si hay un error, conservan los datos para corregirlos. Las reglas de validación están en `datos/validaciones.py`.
 
@@ -61,4 +63,4 @@ python main.py
 python -m pytest -q
 ```
 
-La suite actual contiene 149 pruebas automatizadas (requiere `pip install pytest`).
+La suite actual contiene 172 pruebas automatizadas (requiere `pip install pytest`).

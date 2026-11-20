@@ -11,7 +11,6 @@ def buscar_ejemplar_por_codigo(codigo, nombre_archivo=ARCHIVO_BD):
         WHERE codigo = ? COLLATE NOCASE
     """, (codigo,))
     ejemplar = cursor.fetchone()
-    conexion.close()
     return ejemplar
 
 
@@ -31,7 +30,6 @@ def agregar_ejemplar(ejemplar, nombre_archivo=ARCHIVO_BD):
           ejemplar.sede_actual.id, ejemplar.estado, ejemplar.estado_fisico))
     ejemplar.id = cursor.lastrowid
     conexion.commit()
-    conexion.close()
     return True
 
 
@@ -48,7 +46,6 @@ def listar_ejemplares(nombre_archivo=ARCHIVO_BD):
         ORDER BY l.titulo, e.codigo
     """)
     ejemplares = cursor.fetchall()
-    conexion.close()
     return ejemplares
 
 
@@ -66,12 +63,10 @@ def cambiar_estado_ejemplar(id_ejemplar, estado, nombre_archivo=ARCHIVO_BD):
     ejemplar = cursor.fetchone()
 
     if ejemplar is None or ejemplar[0] not in ("DISPONIBLE", "BAJA"):
-        conexion.close()
         return False
 
     # Un ejemplar dañado debe repararse antes de volver a circular.
     if estado == "DISPONIBLE" and ejemplar[1] == "DANADO":
-        conexion.close()
         return False
 
     cursor.execute("""
@@ -81,11 +76,12 @@ def cambiar_estado_ejemplar(id_ejemplar, estado, nombre_archivo=ARCHIVO_BD):
     """, (estado, id_ejemplar))
     conexion.commit()
     modificadas = cursor.rowcount
-    conexion.close()
     return modificadas > 0
 
 
 def cambiar_estado_fisico_ejemplar(id_ejemplar, estado_fisico, nombre_archivo=ARCHIVO_BD):
+    if estado_fisico not in ("BUENO", "DANADO"):
+        return False
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
     cursor.execute("""
@@ -95,7 +91,6 @@ def cambiar_estado_fisico_ejemplar(id_ejemplar, estado_fisico, nombre_archivo=AR
     """, (estado_fisico, id_ejemplar))
     conexion.commit()
     modificadas = cursor.rowcount
-    conexion.close()
     return modificadas > 0
 
 
@@ -110,7 +105,6 @@ def marcar_ejemplar_reparado(id_ejemplar, nombre_archivo=ARCHIVO_BD):
     """, (id_ejemplar,))
     conexion.commit()
     modificadas = cursor.rowcount
-    conexion.close()
     return modificadas > 0
 
 
@@ -124,22 +118,18 @@ def modificar_ejemplar(id_ejemplar, codigo, id_libro, id_sede, nombre_archivo=AR
     """, (id_ejemplar,))
     ejemplar = cursor.fetchone()
     if ejemplar is None:
-        conexion.close()
         return False, "Ejemplar inexistente"
     if ejemplar[0] not in ("DISPONIBLE", "BAJA") or ejemplar[2] != ejemplar[3]:
-        conexion.close()
         return False, "Sólo se puede modificar un ejemplar disponible o de baja que esté en su sede"
 
     cursor.execute("SELECT id FROM ejemplares WHERE codigo = ? COLLATE NOCASE AND id <> ?",
                    (codigo, id_ejemplar))
     if cursor.fetchone() is not None:
-        conexion.close()
         return False, "Ya existe un ejemplar con ese código"
 
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
     sede = cursor.fetchone()
     if sede is None or sede[0] == 0:
-        conexion.close()
         return False, "La sede está dada de baja"
 
     if id_libro != ejemplar[1]:
@@ -148,7 +138,6 @@ def modificar_ejemplar(id_ejemplar, codigo, id_libro, id_sede, nombre_archivo=AR
             UNION SELECT 1 FROM reservas WHERE ejemplar_id = ?
         """, (id_ejemplar, id_ejemplar))
         if cursor.fetchone() is not None:
-            conexion.close()
             return False, "No se puede cambiar el libro de un ejemplar que ya tiene préstamos o reservas"
 
     cursor.execute("""
@@ -157,5 +146,4 @@ def modificar_ejemplar(id_ejemplar, codigo, id_libro, id_sede, nombre_archivo=AR
         WHERE id = ?
     """, (codigo, id_libro, id_sede, id_sede, id_ejemplar))
     conexion.commit()
-    conexion.close()
     return True, "Ejemplar modificado"

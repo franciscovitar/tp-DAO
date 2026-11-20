@@ -18,4 +18,10 @@ class Prestamo:
         self.estado = estado
 
     def esta_vencido(self):
-        return self.estado == "ACTIVO" and self.fecha_vencimiento < date.today()
+        vencimiento = self.fecha_vencimiento
+        if vencimiento is None:
+            return False
+        if isinstance(vencimiento, str):
+            # Las fechas leídas de SQLite llegan como texto ISO (AAAA-MM-DD).
+            vencimiento = date.fromisoformat(vencimiento[:10])
+        return self.estado == "ACTIVO" and vencimiento < date.today()

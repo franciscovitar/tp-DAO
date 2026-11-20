@@ -10,7 +10,6 @@ def buscar_libro_por_isbn(isbn, nombre_archivo=ARCHIVO_BD):
         WHERE isbn = ? COLLATE NOCASE
     """, (isbn,))
     libro = cursor.fetchone()
-    conexion.close()
     return libro
 
 
@@ -26,7 +25,6 @@ def agregar_libro(libro, nombre_archivo=ARCHIVO_BD):
     """, (libro.isbn, libro.titulo, libro.autor, libro.editorial, libro.anio))
     libro.id = cursor.lastrowid
     conexion.commit()
-    conexion.close()
     return True
 
 
@@ -39,7 +37,6 @@ def listar_libros(nombre_archivo=ARCHIVO_BD):
         ORDER BY titulo
     """)
     libros = cursor.fetchall()
-    conexion.close()
     return libros
 
 
@@ -58,5 +55,4 @@ def modificar_libro(libro, nombre_archivo=ARCHIVO_BD):
           libro.anio, libro.id))
     conexion.commit()
     modificadas = cursor.rowcount
-    conexion.close()
     return modificadas > 0

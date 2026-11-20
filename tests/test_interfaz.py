@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from interfaz.app import BibliotecaApp
 
@@ -102,3 +102,24 @@ def test_guardar_socio_limpia_formulario_solo_despues_de_guardar():
         BibliotecaApp.guardar_socio(app)
     assert datos["nombre"].get() == "Juan"
     assert eventos == []
+
+
+def test_cambiar_tipo_reporte_no_lo_genera_automaticamente():
+    tree = Mock()
+    app = SimpleNamespace(
+        tree_reporte=tree,
+        filas_por_tree={str(tree): [("prestamo", 1)]},
+        busquedas={str(tree): (None, [])},
+        lbl_reporte=Mock(),
+    )
+    with patch("interfaz.app.prestamos_activos_y_material_en_transito") as consulta:
+        BibliotecaApp.seleccionar_reporte(app)
+
+    consulta.assert_not_called()
+    tree.master.destroy.assert_called_once_with()
+    assert app.tree_reporte is None
+    assert not app.filas_por_tree
+    assert not app.busquedas
+    app.lbl_reporte.config.assert_called_once_with(
+        text="Presione Generar para ver el reporte seleccionado."
+    )

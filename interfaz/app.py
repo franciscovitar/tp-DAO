@@ -1028,7 +1028,7 @@ class BibliotecaApp(tk.Tk):
         )
         self.combo_reporte.current(0)
         self.combo_reporte.pack(side="left")
-        self.combo_reporte.bind("<<ComboboxSelected>>", lambda _e: self.generar_reporte())
+        self.combo_reporte.bind("<<ComboboxSelected>>", self.seleccionar_reporte)
         ttk.Button(superior, text="Generar", style="Primario.TButton",
                    command=self.generar_reporte).pack(side="left", padx=(8, 0))
         self.lbl_reporte = ttk.Label(superior, text="", style="Ayuda.TLabel")
@@ -1037,6 +1037,15 @@ class BibliotecaApp(tk.Tk):
         self.frame_reporte = ttk.Frame(self.tab_reportes)
         self.frame_reporte.pack(fill="both", expand=True)
         self.tree_reporte = None
+
+    def seleccionar_reporte(self, _evento=None):
+        """Al elegir otra opción, esperar a que el usuario pulse Generar."""
+        if self.tree_reporte is not None:
+            self.filas_por_tree.pop(str(self.tree_reporte), None)
+            self.busquedas.pop(str(self.tree_reporte), None)
+            self.tree_reporte.master.destroy()
+            self.tree_reporte = None
+        self.lbl_reporte.config(text="Presione Generar para ver el reporte seleccionado.")
 
     def mostrar_reporte(self, columnas, titulos, filas, anchos=None):
         if self.tree_reporte is not None:

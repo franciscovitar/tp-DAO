@@ -1,7 +1,7 @@
 import os
 from datetime import date, timedelta
 
-from datos.base_datos import crear_tablas
+from datos.base_datos import crear_tablas, conectar
 from datos.sedes import agregar_sede, cambiar_estado_sede
 from datos.socios import agregar_socio, cambiar_habilitacion_socio
 from datos.libros import agregar_libro
@@ -26,14 +26,31 @@ ARCHIVO_TEST = "test_remitos.db"
 
 
 def setup_function():
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
     crear_tablas(ARCHIVO_TEST)
 
 
 def teardown_function():
+    # Cerrar la conexión compartida del Singleton: en Windows no se puede
+    # borrar un archivo SQLite abierto.
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
+
+
+def forzar_baja_sede(id_sede):
+    """La interfaz ya no permite dar de baja una sede con movimientos en
+    curso. Estas pruebas fuerzan la baja en la base para comprobar que los
+    controles de cada operación siguen funcionando igual."""
+    assert not cambiar_estado_sede(id_sede, False, ARCHIVO_TEST)
+    conexion = conectar(ARCHIVO_TEST)
+    conexion.execute("UPDATE sedes SET activa = 0 WHERE id = ?", (id_sede,))
+    conexion.commit()
+    conexion.close()
 
 
 def crear_datos():
@@ -143,7 +160,7 @@ def test_no_despacha_si_origen_se_dio_de_baja_despues_de_preparar():
         socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
     _, id_remito = crear_remito(id_prestamo, "R-001", ARCHIVO_TEST)
 
-    assert cambiar_estado_sede(origen.id, False, ARCHIVO_TEST)
+    forzar_baja_sede(origen.id)
     ok, mensaje = cambiar_estado_remito(
         id_remito, "DESPACHADO", nombre_archivo=ARCHIVO_TEST)
 
@@ -160,7 +177,7 @@ def test_no_despacha_si_destino_se_dio_de_baja_despues_de_preparar():
         socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
     _, id_remito = crear_remito(id_prestamo, "R-001", ARCHIVO_TEST)
 
-    assert cambiar_estado_sede(destino.id, False, ARCHIVO_TEST)
+    forzar_baja_sede(destino.id)
     ok, mensaje = cambiar_estado_remito(
         id_remito, "DESPACHADO", nombre_archivo=ARCHIVO_TEST)
 
@@ -183,7 +200,7 @@ def crear_prestamo_recibido():
 def test_no_activa_prestamo_si_destino_se_dio_de_baja_despues_de_recibir():
     _, destino, id_prestamo = crear_prestamo_recibido()
 
-    assert cambiar_estado_sede(destino.id, False, ARCHIVO_TEST)
+    forzar_baja_sede(destino.id)
     ok, mensaje = activar_prestamo_interbibliotecario(
         id_prestamo, nombre_archivo=ARCHIVO_TEST)
 
@@ -197,7 +214,7 @@ def test_no_activa_prestamo_si_destino_se_dio_de_baja_despues_de_recibir():
 def test_no_activa_prestamo_si_origen_se_dio_de_baja_despues_de_recibir():
     origen, _, id_prestamo = crear_prestamo_recibido()
 
-    assert cambiar_estado_sede(origen.id, False, ARCHIVO_TEST)
+    forzar_baja_sede(origen.id)
     ok, mensaje = activar_prestamo_interbibliotecario(
         id_prestamo, nombre_archivo=ARCHIVO_TEST)
 

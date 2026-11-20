@@ -3,11 +3,23 @@ from datetime import datetime
 from datos.base_datos import conectar, ARCHIVO_BD
 from modelos.remito import Remito
 from patrones.observer import HistorialRemitoObserver
+from datos.validaciones import validar_codigo
+
+
+def _notificar_creacion(cursor, id_remito, numero):
+    """El estado inicial PREPARADO también queda en el historial a través
+    del Observer, igual que los cambios de estado posteriores."""
+    remito = Remito(numero, None, None, id=id_remito)
+    remito.attach(HistorialRemitoObserver(cursor))
+    remito.notify()
 
 
 def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
-    if numero.strip() == "":
+    if (numero or "").strip() == "":
         return False, "Número de remito obligatorio"
+    ok, numero = validar_codigo(numero, "número de remito")
+    if not ok:
+        return False, numero
 
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
@@ -19,10 +31,8 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     """, (id_prestamo,))
     prestamo = cursor.fetchone()
     if prestamo is None:
-        conexion.close()
         return False, "Préstamo inexistente"
     if prestamo[3] != "SOLICITADO":
-        conexion.close()
         return False, "El préstamo no está pendiente de envío"
 
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (prestamo[1],))
@@ -30,10 +40,8 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (prestamo[2],))
     destino = cursor.fetchone()
     if origen is None or origen[0] == 0:
-        conexion.close()
         return False, "La sede origen está dada de baja"
     if destino is None or destino[0] == 0:
-        conexion.close()
         return False, "La sede destino está dada de baja"
 
     cursor.execute("""
@@ -43,18 +51,14 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     """, (prestamo[0],))
     ejemplar = cursor.fetchone()
     if ejemplar is None:
-        conexion.close()
         return False, "Ejemplar inexistente"
     if ejemplar[0] != "RESERVADO":
-        conexion.close()
         return False, "El ejemplar no está reservado para el envío"
     if ejemplar[1] != prestamo[1] or ejemplar[2] != prestamo[1]:
-        conexion.close()
         return False, "El ejemplar no se encuentra en la sede de origen"
 
-    cursor.execute("SELECT id FROM remitos WHERE numero = ?", (numero,))
+    cursor.execute("SELECT id FROM remitos WHERE numero = ? COLLATE NOCASE", (numero,))
     if cursor.fetchone() is not None:
-        conexion.close()
         return False, "Ya existe un remito con ese número"
 
     cursor.execute("""
@@ -62,7 +66,6 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         WHERE prestamo_id = ? AND sede_origen_id = ? AND sede_destino_id = ?
     """, (id_prestamo, prestamo[1], prestamo[2]))
     if cursor.fetchone() is not None:
-        conexion.close()
         return False, "El préstamo ya tiene un remito de ida"
 
     ahora = datetime.now().isoformat(timespec="seconds")
@@ -83,23 +86,21 @@ def crear_remito(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
             VALUES (?, ?)
         """, (id_remito, prestamo[0]))
 
-        cursor.execute("""
-            INSERT INTO historial_remito (remito_id, estado, fecha_hora)
-            VALUES (?, ?, ?)
-        """, (id_remito, "PREPARADO", ahora))
+        _notificar_creacion(cursor, id_remito, numero)
 
         conexion.commit()
-        conexion.close()
         return True, id_remito
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
 def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
-    if numero.strip() == "":
+    if (numero or "").strip() == "":
         return False, "Número de remito obligatorio"
+    ok, numero = validar_codigo(numero, "número de remito")
+    if not ok:
+        return False, numero
 
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
@@ -111,13 +112,10 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     """, (id_prestamo,))
     prestamo = cursor.fetchone()
     if prestamo is None:
-        conexion.close()
         return False, "Préstamo inexistente"
-    if prestamo[3] != "DEVUELTO":
-        conexion.close()
+    if prestamo[3] not in ("DEVUELTO", "CANCELADO"):
         return False, "El préstamo todavía no fue devuelto"
     if prestamo[1] == prestamo[2]:
-        conexion.close()
         return False, "El préstamo es local y no necesita remito de retorno"
 
     id_sede_origen = prestamo[2]
@@ -128,15 +126,12 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede_destino,))
     destino = cursor.fetchone()
     if origen is None or origen[0] == 0:
-        conexion.close()
         return False, "La sede origen está dada de baja"
     if destino is None or destino[0] == 0:
-        conexion.close()
         return False, "La sede destino está dada de baja"
 
-    cursor.execute("SELECT id FROM remitos WHERE numero = ?", (numero,))
+    cursor.execute("SELECT id FROM remitos WHERE numero = ? COLLATE NOCASE", (numero,))
     if cursor.fetchone() is not None:
-        conexion.close()
         return False, "Ya existe un remito con ese número"
 
     cursor.execute("""
@@ -144,7 +139,6 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
         WHERE prestamo_id = ? AND sede_origen_id = ? AND sede_destino_id = ?
     """, (id_prestamo, id_sede_origen, id_sede_destino))
     if cursor.fetchone() is not None:
-        conexion.close()
         return False, "El préstamo ya tiene un remito de retorno"
 
     cursor.execute("""
@@ -154,13 +148,10 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
     """, (prestamo[0],))
     ejemplar = cursor.fetchone()
     if ejemplar is None:
-        conexion.close()
         return False, "Ejemplar inexistente"
     if ejemplar[0] != "PENDIENTE_RETORNO" or ejemplar[2] != id_sede_origen:
-        conexion.close()
         return False, "El ejemplar no está pendiente de retorno en la sede de devolución"
     if ejemplar[1] != id_sede_destino:
-        conexion.close()
         return False, "La sede de retorno no coincide con la sede de pertenencia"
 
     ahora = datetime.now().isoformat(timespec="seconds")
@@ -181,17 +172,12 @@ def crear_remito_retorno(id_prestamo, numero, nombre_archivo=ARCHIVO_BD):
             VALUES (?, ?)
         """, (id_remito, prestamo[0]))
 
-        cursor.execute("""
-            INSERT INTO historial_remito (remito_id, estado, fecha_hora)
-            VALUES (?, ?, ?)
-        """, (id_remito, "PREPARADO", ahora))
+        _notificar_creacion(cursor, id_remito, numero)
 
         conexion.commit()
-        conexion.close()
         return True, id_remito
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
@@ -208,7 +194,6 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
     """, (id_remito,))
     fila = cursor.fetchone()
     if fila is None:
-        conexion.close()
         return False, "Remito inexistente"
 
     remito = Remito(
@@ -219,14 +204,35 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
         estado=fila[8], id=fila[0]
     )
 
+    if not remito.puede_cambiar_a(nuevo_estado):
+        return False, "Cambio de estado no permitido"
+
     # Una sede pudo haber sido dada de baja después de preparar el remito.
-    if nuevo_estado == "DESPACHADO" and fila[8] == "PREPARADO":
+    if nuevo_estado in ("DESPACHADO", "RECIBIDO"):
         for id_sede, tipo in ((fila[3], "origen"), (fila[4], "destino")):
+            if nuevo_estado == "RECIBIDO" and tipo == "origen":
+                continue
             cursor.execute("SELECT activa FROM sedes WHERE id = ?", (id_sede,))
             sede = cursor.fetchone()
             if sede is None or sede[0] == 0:
-                conexion.close()
                 return False, f"La sede {tipo} está dada de baja"
+
+    cursor.execute("""
+        SELECT sede_origen_id, sede_destino_id, estado
+        FROM prestamos
+        WHERE id = ?
+    """, (fila[2],))
+    prestamo = cursor.fetchone()
+    es_retorno = (
+        prestamo is not None
+        and fila[3] == prestamo[1]
+        and fila[4] == prestamo[0]
+    )
+
+    # Un remito de envío de una solicitud cancelada ya no debe salir.
+    if nuevo_estado == "DESPACHADO" and not es_retorno and (
+            prestamo is None or prestamo[2] != "SOLICITADO"):
+        return False, "La solicitud de este remito ya no está pendiente"
 
     historial_observer = HistorialRemitoObserver(cursor)
     remito.attach(historial_observer)
@@ -236,10 +242,6 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
             remito.attach(observer)
 
     try:
-        if not remito.cambiar_estado(nuevo_estado):
-            conexion.close()
-            return False, "Cambio de estado no permitido"
-
         ahora = datetime.now().isoformat(timespec="seconds")
         fecha_despacho = fila[6]
         fecha_recepcion = fila[7]
@@ -265,17 +267,6 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
                 )
             """, (id_remito,))
         elif nuevo_estado == "RECIBIDO":
-            cursor.execute("""
-                SELECT sede_origen_id, sede_destino_id
-                FROM prestamos
-                WHERE id = ?
-            """, (fila[2],))
-            prestamo = cursor.fetchone()
-            es_retorno = (
-                prestamo is not None
-                and fila[3] == prestamo[1]
-                and fila[4] == prestamo[0]
-            )
             estado_ejemplar = "DISPONIBLE" if es_retorno else "RESERVADO"
 
             cursor.execute("""
@@ -292,12 +283,13 @@ def cambiar_estado_remito(id_remito, nuevo_estado, observadores=None,
                 )
             """, (estado_ejemplar, estado_ejemplar, fila[4], id_remito))
 
+        # Se notifica a los observadores recién cuando los cambios ya están
+        # escritos: si algo falló antes, nadie se entera de un estado falso.
+        remito.cambiar_estado(nuevo_estado)
         conexion.commit()
-        conexion.close()
         return True, "Estado actualizado"
     except Exception:
         conexion.rollback()
-        conexion.close()
         raise
 
 
@@ -311,7 +303,6 @@ def buscar_remito(id_remito, nombre_archivo=ARCHIVO_BD):
         WHERE id = ?
     """, (id_remito,))
     remito = cursor.fetchone()
-    conexion.close()
     return remito
 
 
@@ -325,7 +316,6 @@ def listar_historial_remito(id_remito, nombre_archivo=ARCHIVO_BD):
         ORDER BY id
     """, (id_remito,))
     historial = cursor.fetchall()
-    conexion.close()
     return historial
 
 
@@ -341,5 +331,4 @@ def listar_remitos(nombre_archivo=ARCHIVO_BD):
         ORDER BY r.id DESC
     """)
     remitos = cursor.fetchall()
-    conexion.close()
     return remitos

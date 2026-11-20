@@ -39,6 +39,10 @@ class DatabaseSingleton:
     def obtener_conexion(self):
         if not self._conexion_activa():
             self._initialize_connection()
+        elif self.connection.in_transaction:
+            # Una operación anterior terminó sin commit: se descartan esos cambios
+            # para que no se confirmen junto con la operación siguiente.
+            self.connection.rollback()
         return self.connection
 
     def close_connection(self):
@@ -180,4 +184,3 @@ def crear_tablas(nombre_archivo=ARCHIVO_BD):
     """)
 
     conexion.commit()
-    conexion.close()

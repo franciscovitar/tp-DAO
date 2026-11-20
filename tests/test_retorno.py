@@ -27,12 +27,18 @@ ARCHIVO_TEST = "test_retorno.db"
 
 
 def setup_function():
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
     crear_tablas(ARCHIVO_TEST)
 
 
 def teardown_function():
+    # Cerrar la conexión compartida del Singleton: en Windows no se puede
+    # borrar un archivo SQLite abierto.
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
 
@@ -169,3 +175,37 @@ def test_detecta_retorno_aunque_las_sedes_tengan_el_mismo_nombre():
     assert len(pendientes) == 1
     assert pendientes[0][0] == id_prestamo
 
+
+
+def test_cancela_solicitud_si_el_socio_queda_inhabilitado():
+    from datos.prestamos import cancelar_solicitud_interbibliotecaria
+    from datos.socios import cambiar_habilitacion_socio
+
+    origen = Sede("Centro", "Colon 100", "111", "uno@mail.com", "8 a 20")
+    destino = Sede("Norte", "Rivadavia 200", "222", "dos@mail.com", "8 a 20")
+    agregar_sede(origen, ARCHIVO_TEST)
+    agregar_sede(destino, ARCHIVO_TEST)
+    socio = Socio("40111222", "Ana", "Perez", "111", "ana@mail.com")
+    agregar_socio(socio, ARCHIVO_TEST)
+    libro = Libro("9789500000001", "Uno", "Autor", "Editorial", 2020)
+    agregar_libro(libro, ARCHIVO_TEST)
+    ejemplar = Ejemplar("EJ-001", libro, origen)
+    agregar_ejemplar(ejemplar, ARCHIVO_TEST)
+
+    _, id_prestamo = solicitar_prestamo_interbibliotecario(
+        socio.id, ejemplar.id, destino.id, ARCHIVO_TEST)
+    _, id_remito = crear_remito(id_prestamo, "IDA-001", ARCHIVO_TEST)
+    avanzar_hasta_recibido(id_remito)
+
+    cambiar_habilitacion_socio(socio.id, False, ARCHIVO_TEST)
+    ok, _ = cancelar_solicitud_interbibliotecaria(id_prestamo, ARCHIVO_TEST)
+    assert ok
+    assert buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)[5] == "PENDIENTE_RETORNO"
+
+    # El ejemplar vuelve a su sede con el remito de retorno
+    ok, id_retorno = crear_remito_retorno(id_prestamo, "RET-001", ARCHIVO_TEST)
+    assert ok
+    avanzar_hasta_recibido(id_retorno)
+    ejemplar_final = buscar_ejemplar_por_codigo("EJ-001", ARCHIVO_TEST)
+    assert ejemplar_final[5] == "DISPONIBLE"
+    assert ejemplar_final[4] == origen.id

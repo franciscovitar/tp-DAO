@@ -10,7 +10,6 @@ def buscar_socio_por_dni(dni, nombre_archivo=ARCHIVO_BD):
         WHERE dni = ?
     """, (dni,))
     socio = cursor.fetchone()
-    conexion.close()
     return socio
 
 
@@ -27,7 +26,6 @@ def agregar_socio(socio, nombre_archivo=ARCHIVO_BD):
           socio.email, int(socio.habilitado)))
     socio.id = cursor.lastrowid
     conexion.commit()
-    conexion.close()
     return True
 
 
@@ -40,7 +38,6 @@ def listar_socios(nombre_archivo=ARCHIVO_BD):
         ORDER BY apellido, nombre
     """)
     socios = cursor.fetchall()
-    conexion.close()
     return socios
 
 
@@ -59,19 +56,39 @@ def modificar_socio(socio, nombre_archivo=ARCHIVO_BD):
           socio.email, socio.id))
     conexion.commit()
     modificadas = cursor.rowcount
-    conexion.close()
     return modificadas > 0
 
 
 def cambiar_habilitacion_socio(id_socio, habilitado, nombre_archivo=ARCHIVO_BD):
+    """Al inhabilitar a un socio se cancelan sus reservas activas, para que
+    los ejemplares reservados vuelvan a estar disponibles para otros."""
     conexion = conectar(nombre_archivo)
     cursor = conexion.cursor()
-    cursor.execute("""
-        UPDATE socios
-        SET habilitado = ?
-        WHERE id = ?
-    """, (int(habilitado), id_socio))
-    conexion.commit()
-    modificadas = cursor.rowcount
-    conexion.close()
-    return modificadas > 0
+    try:
+        cursor.execute("""
+            UPDATE socios
+            SET habilitado = ?
+            WHERE id = ?
+        """, (int(habilitado), id_socio))
+        modificadas = cursor.rowcount
+
+        if modificadas > 0 and not habilitado:
+            cursor.execute("""
+                UPDATE ejemplares
+                SET estado = 'DISPONIBLE'
+                WHERE estado = 'RESERVADO' AND id IN (
+                    SELECT ejemplar_id FROM reservas
+                    WHERE socio_id = ? AND estado = 'ACTIVA'
+                )
+            """, (id_socio,))
+            cursor.execute("""
+                UPDATE reservas
+                SET estado = 'CANCELADA'
+                WHERE socio_id = ? AND estado = 'ACTIVA'
+            """, (id_socio,))
+
+        conexion.commit()
+        return modificadas > 0
+    except Exception:
+        conexion.rollback()
+        raise

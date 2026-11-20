@@ -23,12 +23,18 @@ ARCHIVO_TEST = "test_reportes.db"
 
 
 def setup_function():
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
     crear_tablas(ARCHIVO_TEST)
 
 
 def teardown_function():
+    # Cerrar la conexión compartida del Singleton: en Windows no se puede
+    # borrar un archivo SQLite abierto.
+    from datos.base_datos import DatabaseSingleton
+    DatabaseSingleton().close_connection()
     if os.path.exists(ARCHIVO_TEST):
         os.remove(ARCHIVO_TEST)
 

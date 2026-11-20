@@ -30,7 +30,6 @@ def prestamos_activos_y_material_en_transito(nombre_archivo=ARCHIVO_BD):
         ORDER BY r.id
     """)
     en_transito = cursor.fetchall()
-    conexion.close()
     return {"prestamos_activos": prestamos, "material_en_transito": en_transito}
 
 
@@ -47,7 +46,6 @@ def libros_mas_solicitados_interbibliotecarios(nombre_archivo=ARCHIVO_BD):
         ORDER BY cantidad DESC, l.titulo
     """)
     resultado = cursor.fetchall()
-    conexion.close()
     return resultado
 
 
@@ -59,12 +57,11 @@ def disponibilidad_catalogo_por_sede(nombre_archivo=ARCHIVO_BD):
         FROM ejemplares e
         JOIN sedes s ON s.id = e.sede_actual_id
         JOIN libros l ON l.id = e.libro_id
-        WHERE e.estado = 'DISPONIBLE'
+        WHERE e.estado = 'DISPONIBLE' AND s.activa = 1
         GROUP BY s.id, s.nombre, l.id, l.isbn, l.titulo
         ORDER BY s.nombre, l.titulo
     """)
     resultado = cursor.fetchall()
-    conexion.close()
     return resultado
 
 
@@ -76,6 +73,7 @@ def movimientos_y_tiempo_promedio_transito(nombre_archivo=ARCHIVO_BD):
         FROM remitos r
         JOIN sedes so ON so.id = r.sede_origen_id
         JOIN sedes sd ON sd.id = r.sede_destino_id
+        WHERE r.estado <> 'PREPARADO'
         GROUP BY so.id, so.nombre, sd.id, sd.nombre
         ORDER BY cantidad DESC, so.nombre, sd.nombre
     """)
@@ -89,7 +87,6 @@ def movimientos_y_tiempo_promedio_transito(nombre_archivo=ARCHIVO_BD):
           AND fecha_recepcion IS NOT NULL
     """)
     promedio = cursor.fetchone()[0]
-    conexion.close()
     return {
         "movimientos": movimientos,
         "horas_promedio_transito": 0 if promedio is None else promedio
@@ -107,9 +104,8 @@ def prestamos_vencidos(nombre_archivo=ARCHIVO_BD):
         JOIN ejemplares e ON e.id = p.ejemplar_id
         JOIN libros l ON l.id = e.libro_id
         WHERE p.estado = 'ACTIVO'
-          AND date(p.fecha_vencimiento) < date('now')
+          AND date(p.fecha_vencimiento) < date('now', 'localtime')
         ORDER BY p.fecha_vencimiento
     """)
     vencidos = cursor.fetchall()
-    conexion.close()
     return vencidos

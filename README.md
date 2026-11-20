@@ -71,7 +71,8 @@ python main.py
 La primera orden agrega **3 sedes, 8 socios, 10 libros, 20 ejemplares,
 3 reservas, 4 préstamos y 2 remitos**, todos ficticios. Incluye una reserva
 activa, una cumplida, una cancelada, préstamos locales e interbibliotecarios,
-un remito `PREPARADO`, otro `RECIBIDO` con historial y un ejemplar `BAJA/DANADO`
+un remito `PREPARADO`, otro `RECIBIDO` con historial y un **tiempo ficticio
+de tránsito de 4 h 30 min** (visible en Reportes), y un ejemplar `BAJA/DANADO`
 para practicar las validaciones.
 
 Es una carga **manual y opcional**: `main.py` nunca la ejecuta por su cuenta.
@@ -83,10 +84,27 @@ También se puede elegir otro archivo con `python cargar_datos_demo.py --bd prue
 El archivo `biblioteca.db` es local y está excluido de GitHub (`.gitignore`);
 lo compartido en el repositorio es el script para generar los datos.
 
+Si ya habías cargado la demostración con una versión anterior, el reporte
+podría mostrar `0.00 h` porque el remito se despachó y recibió al instante.
+Para corregir **sólo ese remito ficticio**, cerrá la aplicación y ejecutá
+en la terminal de PowerShell, después de actualizar el código:
+
+```powershell
+Copy-Item .\biblioteca.db ".\biblioteca_backup_$(Get-Date -Format yyyyMMdd_HHmmss).db"
+python cargar_datos_demo.py --ajustar-traslado-demo
+python main.py
+```
+
+El comando normal sigue sin cambiar datos previamente cargados; la opción
+`--ajustar-traslado-demo` únicamente corrige `DEMO-IDA-002` si mantiene los
+estados y fechas originales sin duración. No toca remitos reales ni otros
+ejemplos. Si el remito ya tiene un tiempo registrado o fue modificado, lo deja
+igual. La copia de seguridad permite recuperar la base anterior si hiciera falta.
+
 ## Pruebas
 
 ```bash
 python -m pytest -q
 ```
 
-La suite actual contiene 198 pruebas automatizadas (requiere `pip install pytest`).
+La suite incluye pruebas automatizadas (requiere `pip install pytest`).

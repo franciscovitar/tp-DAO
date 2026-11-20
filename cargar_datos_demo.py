@@ -3,13 +3,16 @@
 Uso desde la carpeta del proyecto:
     python cargar_datos_demo.py
     python cargar_datos_demo.py --bd otra_biblioteca.db
+    python cargar_datos_demo.py --ajustar-traslado-demo
 
 No borra registros existentes ni vuelve a crear los que ya están cargados.
+El ajuste opcional sólo afecta al remito ficticio DEMO-IDA-002 sin duración.
 """
 
 import argparse
+from datetime import datetime, timedelta
 
-from datos.base_datos import ARCHIVO_BD, DatabaseSingleton, crear_tablas
+from datos.base_datos import ARCHIVO_BD, DatabaseSingleton, conectar, crear_tablas
 from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
 from datos.libros import agregar_libro, buscar_libro_por_isbn
 from datos.prestamos import (
@@ -66,6 +69,96 @@ def _exigir(resultado, descripcion):
     if not correcto:
         raise RuntimeError(f"No se pudo {descripcion}: {valor}")
     return valor
+
+
+def ajustar_transito_demo(nombre_archivo=ARCHIVO_BD):
+    """Da 4 h 30 min al remito ficticio sin alterar movimientos reales.
+
+    Sólo actualiza DEMO-IDA-002 si conserva las relaciones, estados e historial
+    originales y todos sus eventos sucedieron prácticamente al mismo tiempo.
+    Devuelve False si ya tiene duración o si el usuario lo modificó.
+    """
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT r.id, r.fecha_creacion, r.fecha_despacho, r.fecha_recepcion,
+               p.id, p.fecha_solicitud
+        FROM remitos r
+        JOIN prestamos p ON p.id = r.prestamo_id
+        JOIN socios s ON s.id = p.socio_id
+        JOIN ejemplares e ON e.id = p.ejemplar_id
+        JOIN remito_ejemplares re ON re.remito_id = r.id
+                                 AND re.ejemplar_id = e.id
+        JOIN sedes so ON so.id = r.sede_origen_id
+        JOIN sedes sd ON sd.id = r.sede_destino_id
+        WHERE r.numero = 'DEMO-IDA-002'
+          AND r.estado = 'RECIBIDO' AND p.estado = 'ACTIVO'
+          AND e.codigo = 'DEMO-N-03' AND s.dni = '49000007'
+          AND so.nombre = ? AND sd.nombre = ?
+    """, (SEDES["Norte"][0], SEDES["Sur"][0]))
+    remito = cursor.fetchone()
+    if remito is None or remito[2] is None or remito[3] is None:
+        return False
+
+    id_remito, creacion_original, despacho_original, recepcion_original, id_prestamo, solicitud = remito
+    try:
+        creacion = datetime.fromisoformat(creacion_original)
+        despacho = datetime.fromisoformat(despacho_original)
+        recepcion = datetime.fromisoformat(recepcion_original)
+    except (TypeError, ValueError):
+        return False
+
+    # No modificar remitos con tiempos auténticos, fechas editadas o ajenos
+    # al lote cargado por este script.
+    if not (creacion <= despacho <= recepcion and
+            0 <= (recepcion - creacion).total_seconds() <= 60 and
+            solicitud == recepcion.date().isoformat()):
+        return False
+    if cursor.execute(
+        "SELECT COUNT(*) FROM remito_ejemplares WHERE remito_id = ?", (id_remito,)
+    ).fetchone()[0] != 1:
+        return False
+
+    historial = cursor.execute("""
+        SELECT id, estado, fecha_hora FROM historial_remito
+        WHERE remito_id = ? ORDER BY id
+    """, (id_remito,)).fetchall()
+    if [fila[1] for fila in historial] != [
+        "PREPARADO", "DESPACHADO", "EN_TRANSITO", "RECIBIDO"
+    ]:
+        return False
+    try:
+        fechas_historial = [datetime.fromisoformat(fila[2]) for fila in historial]
+    except (TypeError, ValueError):
+        return False
+    if not (fechas_historial == sorted(fechas_historial) and
+            all(0 <= (recepcion - fecha).total_seconds() <= 60
+                for fecha in fechas_historial)):
+        return False
+
+    # La recepción real del ejemplo se mantiene como referencia; se retroceden
+    # los eventos ficticios para que haya un tránsito y un historial coherentes.
+    despacho = recepcion - timedelta(hours=4, minutes=30)
+    creacion = despacho - timedelta(minutes=30)
+    fechas = (creacion, despacho, despacho + timedelta(minutes=30), recepcion)
+    try:
+        cursor.execute("""
+            UPDATE remitos SET fecha_creacion = ?, fecha_despacho = ?
+            WHERE id = ?
+        """, (creacion.isoformat(timespec="seconds"),
+              despacho.isoformat(timespec="seconds"), id_remito))
+        cursor.execute("""
+            UPDATE prestamos SET fecha_solicitud = ? WHERE id = ?
+        """, (creacion.date().isoformat(), id_prestamo))
+        for fila, fecha in zip(historial, fechas):
+            cursor.execute("""
+                UPDATE historial_remito SET fecha_hora = ? WHERE id = ?
+            """, (fecha.isoformat(timespec="seconds"), fila[0]))
+        conexion.commit()
+    except Exception:
+        conexion.rollback()
+        raise
+    return True
 
 
 def cargar_datos_demo(nombre_archivo=ARCHIVO_BD):
@@ -188,6 +281,8 @@ def cargar_datos_demo(nombre_archivo=ARCHIVO_BD):
         _exigir(activar_prestamo_interbibliotecario(
             recibido, dias=14, nombre_archivo=nombre_archivo
         ), "activar el préstamo interbibliotecario")
+        if not ajustar_transito_demo(nombre_archivo):
+            raise RuntimeError("No se pudieron preparar las fechas del remito de muestra")
         cantidades["prestamos"] += 1
         cantidades["remitos"] += 1
 
@@ -198,14 +293,20 @@ def main():
     parser = argparse.ArgumentParser(description="Cargar datos ficticios de demostración")
     parser.add_argument("--bd", default=ARCHIVO_BD,
                         help=f"Archivo SQLite de destino (predeterminado: {ARCHIVO_BD})")
+    parser.add_argument("--ajustar-traslado-demo", action="store_true",
+                        help="Corrige el tiempo del remito DEMO-IDA-002 ya cargado, sólo si conserva las fechas originales")
     opciones = parser.parse_args()
 
     try:
         cantidades = cargar_datos_demo(opciones.bd)
+        ajustado = (ajustar_transito_demo(opciones.bd)
+                    if opciones.ajustar_traslado_demo else False)
         print("Datos de demostración cargados:")
         for tipo, cantidad in cantidades.items():
             print(f"  {tipo}: {cantidad} nuevos")
-        if not any(cantidades.values()):
+        if ajustado:
+            print("Remito DEMO-IDA-002 ajustado: tránsito ficticio de 4 h 30 min.")
+        elif not any(cantidades.values()):
             print("Los ejemplos ya estaban cargados. No se modificó nada.")
         print("Listo. Abrí la biblioteca con: python main.py")
     finally:

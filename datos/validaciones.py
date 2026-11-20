@@ -74,8 +74,11 @@ def validar_dni(texto):
     dni = (texto or "").strip().replace(".", "").replace(" ", "")
     if not _SOLO_DIGITOS.fullmatch(dni):
         return False, "El DNI debe contener solamente números."
-    dni = dni.lstrip("0")
-    if not 7 <= len(dni) <= 8:
+    # Un DNI de 7 u 8 dígitos se conserva tal como fue ingresado, incluso
+    # si empieza con cero. Sólo se quita el relleno extra cuando supera 8.
+    if len(dni) > 8:
+        dni = dni.lstrip("0")
+    if not 7 <= len(dni) <= 8 or not dni.strip("0"):
         return False, "El DNI debe tener 7 u 8 dígitos."
     return True, dni
 
@@ -110,9 +113,10 @@ def validar_direccion(texto):
     if not ok:
         return ok, valor
     tiene_calle = re.search(rf"[{_LETRAS}]{{3,}}", valor) is not None
-    tiene_altura = any(c.isdigit() for c in valor)
-    if not _DIRECCION.fullmatch(valor) or not tiene_calle or not tiene_altura:
-        return False, "La dirección debe tener calle y altura (ejemplo: Av. Colón 1200)."
+    # Algunas bibliotecas están en caminos, campus o calles sin número.
+    # Un número presente tampoco garantiza que sea la altura de la calle.
+    if not _DIRECCION.fullmatch(valor) or not tiene_calle:
+        return False, "La dirección debe indicar una calle o referencia (ej.: Av. Colón 1200 o Camino Rural s/n)."
     return True, " ".join(valor.split())
 
 
@@ -181,7 +185,20 @@ def validar_horario(texto):
 
 
 def validar_isbn(texto):
-    isbn = (texto or "").strip().replace("-", "").replace(" ", "").upper()
+    original = (texto or "").strip().upper()
+    # Sin separadores se admiten los 10/13 caracteres. Si se utilizan,
+    # deben separar todos los componentes del ISBN (de longitud variable).
+    # Así se evitan guiones iniciales, finales, duplicados o incompletos.
+    sin_separadores = re.fullmatch(r"(?:[0-9]{13}|[0-9]{9}[0-9X])", original)
+    isbn_13_separado = re.fullmatch(
+        r"97[89][- ][0-9]{1,5}[- ][0-9]{1,7}[- ][0-9]{1,6}[- ][0-9]", original
+    )
+    isbn_10_separado = re.fullmatch(
+        r"[0-9]{1,5}[- ][0-9]{1,7}[- ][0-9]{1,6}[- ][0-9X]", original
+    )
+    if not (sin_separadores or isbn_13_separado or isbn_10_separado):
+        return False, "El ISBN debe tener 10 o 13 caracteres y separadores entre sus componentes completos."
+    isbn = original.replace("-", "").replace(" ", "")
     if len(isbn) == 13 and _SOLO_DIGITOS.fullmatch(isbn):
         return True, isbn
     if len(isbn) == 10 and _SOLO_DIGITOS.fullmatch(isbn[:9]) and (isbn[9].isdigit() or isbn[9] == "X"):

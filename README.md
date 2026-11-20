@@ -29,6 +29,8 @@ Una solicitud puede cancelarse mientras no esté activa. Si el ejemplar todavía
 
 Los días del préstamo se aplican al registrar un préstamo local o al **activar** una solicitud interbibliotecaria recibida. Los formularios se limpian después de guardar correctamente; si hay un error, conservan los datos para corregirlos. Las reglas de validación están en `datos/validaciones.py`.
 
+Las direcciones pueden indicar una calle, camino o referencia sin número de altura (por ejemplo, `Av. Colón s/n`). Los DNI de 7 u 8 dígitos conservan los ceros iniciales. Los ISBN se admiten sin separadores o con todos sus componentes separados por guiones o espacios; se comprueba su formato, no la asignación oficial de cada segmento ni el dígito de control.
+
 ## Documentación
 
 - `docs/diseno.md`: decisiones principales del modelo y funcionamiento.
@@ -63,4 +65,4 @@ python main.py
 python -m pytest -q
 ```
 
-La suite actual contiene 172 pruebas automatizadas (requiere `pip install pytest`).
+La suite actual contiene 193 pruebas automatizadas (requiere `pip install pytest`).

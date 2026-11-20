@@ -63,6 +63,12 @@ def test_dni_normaliza_puntos_y_ceros():
     assert validar_dni("040111222") == (True, "40111222")
 
 
+def test_dni_de_ocho_digitos_con_cero_inicial_se_conserva():
+    assert validar_dni("01234567") == (True, "01234567")
+    assert validar_dni("01.234.567") == (True, "01234567")
+    assert validar_dni("00000000")[0] is False
+
+
 @pytest.mark.parametrize("valor", ["123", "978-950-000", "97895000000011", "ABCDEFGHIJ", "123456789Y"])
 def test_isbn_invalido(valor):
     assert not validar_isbn(valor)[0]
@@ -71,6 +77,31 @@ def test_isbn_invalido(valor):
 def test_isbn_normaliza_guiones():
     assert validar_isbn("978-950-000-000-1") == (True, "9789500000001")
     assert validar_isbn("0-306-40615-x") == (True, "030640615X")
+
+
+@pytest.mark.parametrize("texto, esperado", [
+    ("9789500000001", "9789500000001"),
+    ("978-950-000-000-1", "9789500000001"),
+    ("978 950 000 000 1", "9789500000001"),
+    ("979-10-90636-07-1", "9791090636071"),
+    ("0-306-40615-X", "030640615X"),
+])
+def test_isbn_con_separadores_bien_formados(texto, esperado):
+    assert validar_isbn(texto) == (True, esperado)
+
+
+@pytest.mark.parametrize("texto", [
+    "978--950-000-000-1",
+    "-9789500000001",
+    "9789500000001-",
+    "97-8950-000-000-1",
+    "978-9500000001",
+    "978-950-000-000-1-",
+    "978-950--000-000-1",
+    "0--306-40615-X",
+])
+def test_isbn_rechaza_separadores_mal_ubicados(texto):
+    assert validar_isbn(texto)[0] is False
 
 
 @pytest.mark.parametrize("valor", ["0", "-1", "1200", "3000", "99999999999999", "dos mil"])
@@ -148,11 +179,24 @@ def test_sede_con_horario_invalido_no_se_valida():
 @pytest.mark.parametrize("nombre, direccion", [
     ("!!!", "Av. Colón 100"),
     ("General Paz", "sq846dw/9q8"),
-    ("General Paz", "Colón"),
     ("General Paz", "12345"),
+    ("General Paz", "C@lle 123"),
 ])
 def test_sede_con_nombre_o_direccion_basura(nombre, direccion):
     assert not validar_datos_sede(nombre, direccion, "", "", "")[0]
+
+
+@pytest.mark.parametrize("direccion", [
+    "Av. Colón 1200",
+    "Av. Colón s/n",
+    "Camino de las Sierras",
+    "Campus Universitario",
+    "Calle Colón",
+    "Colón",
+    "Ruta Provincial 5",
+])
+def test_sede_acepta_direcciones_sin_altura(direccion):
+    assert validar_datos_sede("Biblioteca Norte", direccion, "", "", "")[0]
 
 
 def test_sede_valida_normal():

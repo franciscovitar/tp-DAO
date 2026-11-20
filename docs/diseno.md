@@ -124,6 +124,14 @@ Tablas principales:
 
 Las operaciones que modifican varias tablas se realizan con commit/rollback para evitar que una operación quede guardada parcialmente.
 
+## Validación de entradas
+
+Las direcciones no exigen una altura numérica porque hay sedes ubicadas en caminos, campus o calles sin número. Se controla que contengan texto y caracteres admitidos, pero no se pretende verificar su existencia geográfica.
+
+Los ISBN pueden ingresarse sin separadores o con sus componentes completos separados mediante guiones o espacios. La validación impide separadores mal ubicados y comprueba la longitud del identificador. No valida los rangos oficiales de registro/editor ni el dígito de control, ya que los ISBN de prueba no necesariamente son reales.
+
+El DNI se guarda como texto y conserva el cero inicial cuando tiene 7 u 8 dígitos. Si se introduce un relleno adicional que supera los 8 dígitos, se elimina ese relleno antes de validar la longitud.
+
 ## Patrones de diseño
 
 ### Observer

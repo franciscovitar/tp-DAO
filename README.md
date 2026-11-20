@@ -69,16 +69,19 @@ python main.py
 ```
 
 La primera orden agrega **3 sedes, 8 socios, 10 libros, 20 ejemplares,
-3 reservas, 4 préstamos y 2 remitos**, todos ficticios. Incluye una reserva
+3 reservas, 5 préstamos y 2 remitos**, todos ficticios. Incluye una reserva
 activa, una cumplida, una cancelada, préstamos locales e interbibliotecarios,
+un **préstamo activo vencido hace 7 días** ("1984", socio Nicolás Herrera),
 un remito `PREPARADO`, otro `RECIBIDO` con historial y un **tiempo ficticio
 de tránsito de 4 h 30 min** (visible en Reportes), y un ejemplar `BAJA/DANADO`
 para practicar las validaciones.
 
 Es una carga **manual y opcional**: `main.py` nunca la ejecuta por su cuenta.
 No borra datos anteriores, no reemplaza registros existentes y evita duplicar
-los ejemplos si se vuelve a ejecutar. Los movimientos de muestra sólo se
-crean sobre ejemplares agregados por esa ejecución.
+los ejemplos si se vuelve a ejecutar. Si ya habías cargado una versión anterior,
+al volver a ejecutar el comando se añade el préstamo vencido **sólo si** el
+ejemplar ficticio `DEMO-C-06` está disponible y nunca fue prestado ni reservado.
+Los demás movimientos se crean sólo sobre ejemplares nuevos.
 
 También se puede elegir otro archivo con `python cargar_datos_demo.py --bd prueba.db`.
 El archivo `biblioteca.db` es local y está excluido de GitHub (`.gitignore`);
@@ -95,7 +98,8 @@ python cargar_datos_demo.py --ajustar-traslado-demo
 python main.py
 ```
 
-El comando normal sigue sin cambiar datos previamente cargados; la opción
+El comando normal no altera préstamos existentes; al actualizar una demostración
+antigua puede sumar el caso vencido sobre el ejemplar ficticio sin uso. La opción
 `--ajustar-traslado-demo` únicamente corrige `DEMO-IDA-002` si mantiene los
 estados y fechas originales sin duración. No toca remitos reales ni otros
 ejemplos. Si el remito ya tiene un tiempo registrado o fue modificado, lo deja

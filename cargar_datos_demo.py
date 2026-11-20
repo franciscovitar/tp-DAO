@@ -10,7 +10,7 @@ El ajuste opcional sólo afecta al remito ficticio DEMO-IDA-002 sin duración.
 """
 
 import argparse
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from datos.base_datos import ARCHIVO_BD, DatabaseSingleton, conectar, crear_tablas
 from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
@@ -161,6 +161,61 @@ def ajustar_transito_demo(nombre_archivo=ARCHIVO_BD):
     return True
 
 
+def _crear_prestamo_vencido_demo(socios, ejemplares, sedes, nombre_archivo):
+    """Agrega un caso vencido sólo si el ejemplar de muestra nunca se usó."""
+    id_ejemplar = ejemplares.get("DEMO-C-06")
+    id_socio = socios.get("Nicolás")
+    if id_ejemplar is None or id_socio is None:
+        return False
+
+    conexion = conectar(nombre_archivo)
+    cursor = conexion.cursor()
+    # También permite actualizar una demo antigua. Si el usuario ya prestó,
+    # reservó o modificó el ejemplar, no se reutiliza ni se modifica.
+    cursor.execute("""
+        SELECT 1
+        FROM ejemplares e
+        JOIN libros l ON l.id = e.libro_id
+        JOIN socios s ON s.id = ?
+        WHERE e.id = ? AND e.codigo = 'DEMO-C-06'
+          AND l.isbn = '9789500000062' AND l.titulo = '1984'
+          AND e.sede_pertenencia_id = ? AND e.sede_actual_id = ?
+          AND e.estado = 'DISPONIBLE' AND e.estado_fisico = 'BUENO'
+          AND s.dni = '49000008' AND s.nombre = 'Nicolás'
+          AND s.apellido = 'Herrera' AND s.habilitado = 1
+          AND NOT EXISTS (SELECT 1 FROM prestamos WHERE ejemplar_id = e.id)
+          AND NOT EXISTS (SELECT 1 FROM reservas WHERE ejemplar_id = e.id)
+          AND NOT EXISTS (SELECT 1 FROM prestamos WHERE socio_id = s.id)
+    """, (id_socio, id_ejemplar, sedes["Centro"].id, sedes["Centro"].id))
+    if cursor.fetchone() is None:
+        return False
+
+    correcto, id_prestamo = registrar_prestamo_local(
+        id_socio, id_ejemplar, sedes["Centro"].id,
+        dias=14, nombre_archivo=nombre_archivo
+    )
+    if not correcto:
+        return False
+
+    # Se retroceden únicamente las fechas del préstamo recién creado:
+    # comenzó hace 21 días y venció hace 7 (préstamo de 14 días).
+    inicio = date.today() - timedelta(days=21)
+    vencimiento = inicio + timedelta(days=14)
+    conexion = conectar(nombre_archivo)
+    try:
+        conexion.execute("""
+            UPDATE prestamos
+            SET fecha_solicitud = ?, fecha_inicio = ?, fecha_vencimiento = ?
+            WHERE id = ?
+        """, (inicio.isoformat(), inicio.isoformat(),
+              vencimiento.isoformat(), id_prestamo))
+        conexion.commit()
+    except Exception:
+        conexion.rollback()
+        raise
+    return True
+
+
 def cargar_datos_demo(nombre_archivo=ARCHIVO_BD):
     """Agrega ejemplos faltantes; sólo genera movimientos sobre ejemplares nuevos."""
     crear_tablas(nombre_archivo)
@@ -285,6 +340,11 @@ def cargar_datos_demo(nombre_archivo=ARCHIVO_BD):
             raise RuntimeError("No se pudieron preparar las fechas del remito de muestra")
         cantidades["prestamos"] += 1
         cantidades["remitos"] += 1
+
+    # Préstamo local activo y vencido: disponible incluso al recargar una
+    # demostración antigua, siempre que DEMO-C-06 no tenga uso previo.
+    if _crear_prestamo_vencido_demo(socios, ejemplares, sedes, nombre_archivo):
+        cantidades["prestamos"] += 1
 
     return cantidades
 

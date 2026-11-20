@@ -1,17 +1,20 @@
 """Pruebas de la carga opcional de una biblioteca de demostración."""
 
+from datetime import date, timedelta
 from pathlib import Path
 import subprocess
 import sys
 
 import pytest
 
+import cargar_datos_demo as modulo_demo
 from cargar_datos_demo import ajustar_transito_demo, cargar_datos_demo
 from datos.base_datos import DatabaseSingleton, conectar
 from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
 from datos.libros import agregar_libro
+from datos.prestamos import registrar_devolucion, registrar_prestamo_local
 from datos.remitos import listar_historial_remito
-from datos.reportes import movimientos_y_tiempo_promedio_transito
+from datos.reportes import movimientos_y_tiempo_promedio_transito, prestamos_vencidos
 from datos.sedes import agregar_sede
 from modelos.ejemplar import Ejemplar
 from modelos.libro import Libro
@@ -37,20 +40,20 @@ def _cantidades(conexion):
 def test_carga_demo_crea_casos_para_mostrar(base_temporal):
     creados = cargar_datos_demo(base_temporal)
     assert creados == {"sedes": 3, "socios": 8, "libros": 10,
-                       "ejemplares": 20, "reservas": 3, "prestamos": 4,
+                       "ejemplares": 20, "reservas": 3, "prestamos": 5,
                        "remitos": 2}
 
     conexion = conectar(base_temporal)
     assert _cantidades(conexion) == {
         "sedes": 3, "socios": 8, "libros": 10, "ejemplares": 20,
-        "reservas": 3, "prestamos": 4, "remitos": 2, "historial_remito": 5,
+        "reservas": 3, "prestamos": 5, "remitos": 2, "historial_remito": 5,
     }
     assert dict(conexion.execute(
         "SELECT estado, COUNT(*) FROM reservas GROUP BY estado"
     ).fetchall()) == {"ACTIVA": 1, "CUMPLIDA": 1, "CANCELADA": 1}
     assert dict(conexion.execute(
         "SELECT estado, COUNT(*) FROM prestamos GROUP BY estado"
-    ).fetchall()) == {"ACTIVO": 2, "DEVUELTO": 1, "SOLICITADO": 1}
+    ).fetchall()) == {"ACTIVO": 3, "DEVUELTO": 1, "SOLICITADO": 1}
 
     assert buscar_ejemplar_por_codigo("DEMO-C-01", base_temporal)[5] == "RESERVADO"
     assert buscar_ejemplar_por_codigo("DEMO-N-01", base_temporal)[5] == "PRESTADO"
@@ -61,6 +64,21 @@ def test_carga_demo_crea_casos_para_mostrar(base_temporal):
     traslado = buscar_ejemplar_por_codigo("DEMO-N-03", base_temporal)
     assert traslado[5] == "PRESTADO"
     assert traslado[3] != traslado[4]
+    assert buscar_ejemplar_por_codigo("DEMO-C-06", base_temporal)[5] == "PRESTADO"
+
+    vencidos = prestamos_vencidos(base_temporal)
+    assert len(vencidos) == 1
+    assert vencidos[0][1:5] == ("49000008", "Nicolás Herrera", "1984", "DEMO-C-06")
+    assert vencidos[0][5] == (date.today() - timedelta(days=7)).isoformat()
+    fechas_vencido = conexion.execute("""
+        SELECT fecha_solicitud, fecha_inicio, fecha_vencimiento, estado
+        FROM prestamos WHERE id = ?
+    """, (vencidos[0][0],)).fetchone()
+    assert fechas_vencido == (
+        (date.today() - timedelta(days=21)).isoformat(),
+        (date.today() - timedelta(days=21)).isoformat(),
+        (date.today() - timedelta(days=7)).isoformat(), "ACTIVO"
+    )
 
     remitos = conexion.execute(
         "SELECT id, numero, estado FROM remitos ORDER BY numero"
@@ -110,6 +128,52 @@ def test_carga_demo_es_idempotente(base_temporal):
         SELECT fecha_creacion, fecha_despacho, fecha_recepcion
         FROM remitos WHERE numero = 'DEMO-IDA-002'
     """).fetchone() == fechas_antes
+
+
+def test_recarga_demo_antigua_agrega_solo_prestamo_vencido(base_temporal, monkeypatch):
+    # Carga equivalente a la versión anterior, sin el caso vencido.
+    with monkeypatch.context() as anterior:
+        anterior.setattr(modulo_demo, "_crear_prestamo_vencido_demo",
+                         lambda *argumentos: False)
+        creados = cargar_datos_demo(base_temporal)
+    assert creados["prestamos"] == 4
+    conexion = conectar(base_temporal)
+    ejemplares_antes = _cantidades(conexion)["ejemplares"]
+
+    segunda = cargar_datos_demo(base_temporal)
+    assert segunda == {"sedes": 0, "socios": 0, "libros": 0,
+                       "ejemplares": 0, "reservas": 0, "prestamos": 1,
+                       "remitos": 0}
+    assert _cantidades(conexion)["ejemplares"] == ejemplares_antes
+    assert len(prestamos_vencidos(base_temporal)) == 1
+    assert cargar_datos_demo(base_temporal)["prestamos"] == 0
+    assert len(prestamos_vencidos(base_temporal)) == 1
+
+
+def test_recarga_demo_respeta_ejemplar_usado_por_el_usuario(base_temporal, monkeypatch):
+    with monkeypatch.context() as anterior:
+        anterior.setattr(modulo_demo, "_crear_prestamo_vencido_demo",
+                         lambda *argumentos: False)
+        cargar_datos_demo(base_temporal)
+
+    conexion = conectar(base_temporal)
+    socio_id = conexion.execute("""
+        SELECT id FROM socios WHERE dni = '49000008'
+    """).fetchone()[0]
+    ejemplar_id, sede_id = conexion.execute("""
+        SELECT id, sede_pertenencia_id FROM ejemplares WHERE codigo = 'DEMO-C-06'
+    """).fetchone()
+    ok, prestamo_id = registrar_prestamo_local(
+        socio_id, ejemplar_id, sede_id, nombre_archivo=base_temporal
+    )
+    assert ok
+    assert registrar_devolucion(prestamo_id, nombre_archivo=base_temporal)[0]
+    prestamos_antes = _cantidades(conexion)["prestamos"]
+
+    assert cargar_datos_demo(base_temporal)["prestamos"] == 0
+    assert _cantidades(conexion)["prestamos"] == prestamos_antes
+    assert prestamos_vencidos(base_temporal) == []
+    assert buscar_ejemplar_por_codigo("DEMO-C-06", base_temporal)[5] == "DISPONIBLE"
 
 
 def test_ajuste_optativo_repara_solo_remito_demo_ya_cargado(base_temporal):

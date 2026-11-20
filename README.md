@@ -59,10 +59,34 @@ Requiere Python 3.10 o superior con Tkinter (incluido en el instalador de python
 python main.py
 ```
 
+## Datos de demostración (opcional)
+
+Para mostrar el TP sin cargar todo manualmente, cerrá primero la aplicación y ejecutá:
+
+```bash
+python cargar_datos_demo.py
+python main.py
+```
+
+La primera orden agrega **3 sedes, 8 socios, 10 libros, 20 ejemplares,
+3 reservas, 4 préstamos y 2 remitos**, todos ficticios. Incluye una reserva
+activa, una cumplida, una cancelada, préstamos locales e interbibliotecarios,
+un remito `PREPARADO`, otro `RECIBIDO` con historial y un ejemplar `BAJA/DANADO`
+para practicar las validaciones.
+
+Es una carga **manual y opcional**: `main.py` nunca la ejecuta por su cuenta.
+No borra datos anteriores, no reemplaza registros existentes y evita duplicar
+los ejemplos si se vuelve a ejecutar. Los movimientos de muestra sólo se
+crean sobre ejemplares agregados por esa ejecución.
+
+También se puede elegir otro archivo con `python cargar_datos_demo.py --bd prueba.db`.
+El archivo `biblioteca.db` es local y está excluido de GitHub (`.gitignore`);
+lo compartido en el repositorio es el script para generar los datos.
+
 ## Pruebas
 
 ```bash
 python -m pytest -q
 ```
 
-La suite actual contiene 193 pruebas automatizadas (requiere `pip install pytest`).
+La suite actual contiene 198 pruebas automatizadas (requiere `pip install pytest`).

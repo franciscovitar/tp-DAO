@@ -6,11 +6,12 @@ import sys
 
 import pytest
 
-from cargar_datos_demo import cargar_datos_demo
+from cargar_datos_demo import ajustar_transito_demo, cargar_datos_demo
 from datos.base_datos import DatabaseSingleton, conectar
 from datos.ejemplares import agregar_ejemplar, buscar_ejemplar_por_codigo
 from datos.libros import agregar_libro
 from datos.remitos import listar_historial_remito
+from datos.reportes import movimientos_y_tiempo_promedio_transito
 from datos.sedes import agregar_sede
 from modelos.ejemplar import Ejemplar
 from modelos.libro import Libro
@@ -73,16 +74,127 @@ def test_carga_demo_crea_casos_para_mostrar(base_temporal):
     assert [fila[0] for fila in listar_historial_remito(remitos[1][0], base_temporal)] == [
         "PREPARADO", "DESPACHADO", "EN_TRANSITO", "RECIBIDO"
     ]
+    assert movimientos_y_tiempo_promedio_transito(base_temporal)[
+        "horas_promedio_transito"
+    ] == pytest.approx(4.5, abs=0.0001)
+
+    fechas = conexion.execute("""
+        SELECT r.fecha_creacion, r.fecha_despacho, r.fecha_recepcion, p.fecha_solicitud
+        FROM remitos r JOIN prestamos p ON p.id = r.prestamo_id
+        WHERE r.numero = 'DEMO-IDA-002'
+    """).fetchone()
+    assert fechas[3] <= fechas[0][:10]
+    assert fechas[0] < fechas[1] < fechas[2]
+    eventos = listar_historial_remito(remitos[1][0], base_temporal)
+    assert [fila[1] for fila in eventos] == sorted(fila[1] for fila in eventos)
+    assert eventos[0][1] == fechas[0]
+    assert eventos[1][1] == fechas[1]
+    assert fechas[1] < eventos[2][1] < fechas[2]
+    assert eventos[3][1] == fechas[2]
 
 
 def test_carga_demo_es_idempotente(base_temporal):
     cargar_datos_demo(base_temporal)
-    primera = _cantidades(conectar(base_temporal))
+    conexion = conectar(base_temporal)
+    primera = _cantidades(conexion)
+    fechas_antes = conexion.execute("""
+        SELECT fecha_creacion, fecha_despacho, fecha_recepcion
+        FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone()
     assert cargar_datos_demo(base_temporal) == {
         "sedes": 0, "socios": 0, "libros": 0, "ejemplares": 0,
         "reservas": 0, "prestamos": 0, "remitos": 0,
     }
     assert _cantidades(conectar(base_temporal)) == primera
+    assert conexion.execute("""
+        SELECT fecha_creacion, fecha_despacho, fecha_recepcion
+        FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone() == fechas_antes
+
+
+def test_ajuste_optativo_repara_solo_remito_demo_ya_cargado(base_temporal):
+    cargar_datos_demo(base_temporal)
+    conexion = conectar(base_temporal)
+    id_remito, recepcion = conexion.execute("""
+        SELECT id, fecha_recepcion FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone()
+    otro_antes = conexion.execute("""
+        SELECT * FROM remitos WHERE numero = 'DEMO-IDA-001'
+    """).fetchone()
+    prestamos_otros = conexion.execute("""
+        SELECT * FROM prestamos WHERE id NOT IN (
+            SELECT prestamo_id FROM remitos WHERE id = ?
+        ) ORDER BY id
+    """, (id_remito,)).fetchall()
+
+    # Simula la biblioteca de una versión anterior, con todos los eventos
+    # generados durante el mismo segundo.
+    conexion.execute("""
+        UPDATE remitos SET fecha_creacion = ?, fecha_despacho = ?
+        WHERE id = ?
+    """, (recepcion, recepcion, id_remito))
+    conexion.execute("""
+        UPDATE historial_remito SET fecha_hora = ? WHERE remito_id = ?
+    """, (recepcion, id_remito))
+    conexion.commit()
+    assert movimientos_y_tiempo_promedio_transito(base_temporal)[
+        "horas_promedio_transito"
+    ] == pytest.approx(0)
+
+    assert ajustar_transito_demo(base_temporal) is True
+    assert movimientos_y_tiempo_promedio_transito(base_temporal)[
+        "horas_promedio_transito"
+    ] == pytest.approx(4.5, abs=0.0001)
+    assert ajustar_transito_demo(base_temporal) is False
+    assert conexion.execute("""
+        SELECT * FROM remitos WHERE numero = 'DEMO-IDA-001'
+    """).fetchone() == otro_antes
+    assert conexion.execute("""
+        SELECT * FROM prestamos WHERE id NOT IN (
+            SELECT prestamo_id FROM remitos WHERE id = ?
+        ) ORDER BY id
+    """, (id_remito,)).fetchall() == prestamos_otros
+
+
+def test_ajuste_optativo_respeta_tiempos_ya_registrados(base_temporal):
+    cargar_datos_demo(base_temporal)
+    conexion = conectar(base_temporal)
+    remito_antes = conexion.execute("""
+        SELECT * FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone()
+    historial_antes = conexion.execute("""
+        SELECT * FROM historial_remito WHERE remito_id = ? ORDER BY id
+    """, (remito_antes[0],)).fetchall()
+
+    assert ajustar_transito_demo(base_temporal) is False
+    assert conexion.execute("""
+        SELECT * FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone() == remito_antes
+    assert conexion.execute("""
+        SELECT * FROM historial_remito WHERE remito_id = ? ORDER BY id
+    """, (remito_antes[0],)).fetchall() == historial_antes
+
+
+def test_ajuste_optativo_no_modifica_remito_demo_con_historial_editado(base_temporal):
+    cargar_datos_demo(base_temporal)
+    conexion = conectar(base_temporal)
+    remito_id, recepcion = conexion.execute("""
+        SELECT id, fecha_recepcion FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone()
+    conexion.execute("""
+        UPDATE remitos SET fecha_creacion = ?, fecha_despacho = ? WHERE id = ?
+    """, (recepcion, recepcion, remito_id))
+    # El usuario agregó un estado; no se reescribe un historial intervenido.
+    conexion.execute("""
+        INSERT INTO historial_remito (remito_id, estado, fecha_hora)
+        VALUES (?, 'RECIBIDO', ?)
+    """, (remito_id, recepcion))
+    conexion.commit()
+
+    assert ajustar_transito_demo(base_temporal) is False
+    assert conexion.execute("""
+        SELECT fecha_despacho FROM remitos WHERE id = ?
+    """, (remito_id,)).fetchone()[0] == recepcion
 
 
 def test_carga_demo_conserva_datos_existentes(base_temporal):
@@ -135,4 +247,33 @@ def test_comando_bd_personalizada_no_crea_biblioteca_por_defecto(tmp_path):
     assert "20 nuevos" in primero.stdout
     assert "Los ejemplos ya estaban cargados" in segundo.stdout
     assert (tmp_path / "ejemplo.db").exists()
+    assert not (tmp_path / "biblioteca.db").exists()
+
+
+def test_comando_ajusta_remito_preexistente_con_opcion_explicita(tmp_path):
+    nombre = str(tmp_path / "ejemplo.db")
+    cargar_datos_demo(nombre)
+    conexion = conectar(nombre)
+    remito_id, recepcion = conexion.execute("""
+        SELECT id, fecha_recepcion FROM remitos WHERE numero = 'DEMO-IDA-002'
+    """).fetchone()
+    conexion.execute("""
+        UPDATE remitos SET fecha_creacion = ?, fecha_despacho = ? WHERE id = ?
+    """, (recepcion, recepcion, remito_id))
+    conexion.execute("""
+        UPDATE historial_remito SET fecha_hora = ? WHERE remito_id = ?
+    """, (recepcion, remito_id))
+    conexion.commit()
+    DatabaseSingleton().close_connection()
+
+    script = Path(__file__).resolve().parents[1] / "cargar_datos_demo.py"
+    resultado = subprocess.run(
+        [sys.executable, str(script), "--bd", nombre, "--ajustar-traslado-demo"],
+        cwd=tmp_path, capture_output=True, text=True, check=True,
+    )
+
+    assert "tránsito ficticio de 4 h 30 min" in resultado.stdout
+    assert movimientos_y_tiempo_promedio_transito(nombre)[
+        "horas_promedio_transito"
+    ] == pytest.approx(4.5, abs=0.0001)
     assert not (tmp_path / "biblioteca.db").exists()
